@@ -333,9 +333,10 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
 #'
 #' @seealso \code{\link{succotash_em}}, \code{\link{succotash_summaries}}.
 succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 10, print_steps = FALSE,
-                                  tau_seq = NULL, em_pi_init = NULL, lambda = NULL, em_Z_init = NULL,
-                                  em_itermax = 1500, em_tol = 10 ^ -6, em_z_start_sd = 1,
-                                  em_pi_init_type = "random", lambda_type = "zero_conc") {
+                                  tau_seq = NULL, em_pi_init = NULL, lambda = NULL,
+                                  em_Z_init = NULL, em_itermax = 1500, em_tol = 10 ^ -6,
+                                  em_z_start_sd = 1, em_pi_init_type = "random",
+                                  lambda_type = "zero_conc") {
 
     em_out <- succotash_em(Y = Y, alpha = alpha, sig_diag = sig_diag, tau_seq = tau_seq,
                            pi_init = em_pi_init, lambda = lambda, Z_init = em_Z_init,
@@ -463,7 +464,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 10, z_start_sd = 1,
     fnorm_x <- abs(qr.R(qr_x)[ncol_x, ncol_x])  ## since dealt with sign earlier
     Y1_scaled <- matrix(Y_tilde[1, ] / fnorm_x, ncol = 1)
     alpha_scaled <- alpha / fnorm_x
-    sig_diag_scaled <- sig_diag / fnorm_x ^ 2
+    sig_diag_scaled <- sig_diag / (fnorm_x ^ 2)
 
     suc_out <- succotash_given_alpha(Y = Y1_scaled, alpha = alpha_scaled, sig_diag = sig_diag_scaled,
                                      num_em_runs = num_em_runs, em_z_start_sd = z_start_sd,
