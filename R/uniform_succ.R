@@ -31,7 +31,8 @@
 #'  \code{Z_new} A vector of length \code{k}. The update for the confounder
 #'  covariates.
 #'
-#' @seealso \code{\link{uniform_succ_given_alpha}} \code{\link{succotash_llike_unif}}
+#'@seealso \code{\link{uniform_succ_given_alpha}}
+#'  \code{\link{succotash_llike_unif}}
 succotash_unif_fixed <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
                                  print_ziter = TRUE, newt_itermax = 100, tol = 10^-4) {
   M <- length(a_seq) + length(b_seq) + 1
@@ -207,7 +208,8 @@ succotash_unif_fixed <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
 #'@param sig_diag A vector of length \code{p} containing the variances of the
 #'  observations.
 #'
-#' @seealso \code{\link{uniform_succ_given_alpha}} \code{\link{succotash_unif_fixed}}.
+#'@seealso \code{\link{uniform_succ_given_alpha}}
+#'  \code{\link{succotash_unif_fixed}}.
 #'
 succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag) {
   M <- length(a_seq) + length(b_seq) + 1
@@ -288,7 +290,8 @@ succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag)
 #' @param use_SQUAREM A logical. Should we use SQUAREM to run the EM? Not quite
 #'   implemented yet.
 #'
-#'   @seealso \code{\link{succotash_llike_unif}} \code{\link{succotash_unif_fixed}}
+#' @seealso \code{\link{succotash_llike_unif}}
+#'   \code{\link{succotash_unif_fixed}}
 uniform_succ_given_alpha <-
   function(Y, alpha, sig_diag, num_em_runs = 10,
            a_seq = NULL, b_seq = NULL, lambda = NULL,
@@ -418,11 +421,22 @@ uniform_succ_given_alpha <-
       em_index <- em_index + 1
     }
 
+    mix_fit <- ashr::unimix(pi = pi_new, a = c(a_seq, rep(0, length(b_seq) + 1)), b = c(rep(0, length(a_seq) + 1), b_seq))
+
+    az <- alpha %*% matrix(Z_new, ncol = 1)
+
+    betahat <- ashr::postmean(m = mix_fit, betahat = c(Y - az), sebetahat = sqrt(sig_diag), v = rep(1000, p))
+
+    probs <- ashr::comppostprob(m = mix_fit, x = c(Y - az), s = sqrt(sig_diag), v = rep(1000, p))
+    lfdr <- probs[length(a_seq) + 1,]
+    q_val <- ashr::qval.from.lfdr(lfdr)
+
     #        sq_out <-
     #            SQUAREM::fpiter(par = pi_Z, lambda = lambda, alpha = alpha,
     #                            Y = Y, a_seq = a_seq, b_seq = b_seq,
     #                            sig_diag = sig_diag,
     #                            fixptfn = succotash_unif_fixed)
 
-    return(list(Z = Z_new, pi_vals = pi_new, a_seq = a_seq, b_seq = b_seq))
+    return(list(Z = Z_new, pi_vals = pi_new, a_seq = a_seq, b_seq = b_seq,
+                lfdr = lfdr, betahat = betahat, qval))
   }

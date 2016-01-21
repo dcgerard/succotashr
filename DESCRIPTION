@@ -10,8 +10,9 @@ Description: An implementation of SUCCOTASH in R. This package contains
     a unimodal prior of the regression coefficients and the hidden covariates.
 License: GPL-2
 LazyData: TRUE
-Imports:
-    SQUAREM (>= 2014.8-1)
-Suggests:
+Imports: 
+    SQUAREM (>= 2014.8-1),
+    ashr
+Suggests: 
     cate (>= 1.0.4)
 RoxygenNote: 5.0.1
