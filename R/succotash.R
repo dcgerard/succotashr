@@ -427,14 +427,17 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 10, print_st
 #'   for details on this second method.
 #' @param lambda_type See \code{\link{succotash_given_alpha}} for options on the
 #'   regularization parameter of the mixing proportions.
+#' @param mix_type Should the prior be a mixture of normals \code{mix_type =
+#'   'normal'} or a mixture of uniforms \code{mix_type = 'uniform'}?
 #'
 #' @return See \code{\link{succotash_given_alpha}} for details of output.
 #'
 #' @export
 #'
-#' @seealso \code{\link{succotash_given_alpha}}, \code{\link{factor_mle}}, \code{\link{succotash_summaries}}.
+#' @seealso \code{\link{succotash_given_alpha}}, \code{\link{factor_mle}},
+#'   \code{\link{succotash_summaries}}.
 succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 10, z_start_sd = 1,
-                      fa_method = c("reg_mle", "quasi_mle"), lambda_type = "zero_conc") {
+                      fa_method = c("reg_mle", "quasi_mle"), lambda_type = "zero_conc", mix_type = 'normal') {
     ncol_x <- ncol(X)
 
     fa_method <- match.arg(fa_method, c("reg_mle", "quasi_mle"))
@@ -466,9 +469,16 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 10, z_start_sd = 1,
     alpha_scaled <- alpha / fnorm_x
     sig_diag_scaled <- sig_diag / (fnorm_x ^ 2)
 
-    suc_out <- succotash_given_alpha(Y = Y1_scaled, alpha = alpha_scaled, sig_diag = sig_diag_scaled,
-                                     num_em_runs = num_em_runs, em_z_start_sd = z_start_sd,
-                                     lambda_type = lambda_type)
+    if (mix_type == 'normal') {
+      suc_out <- succotash_given_alpha(Y = Y1_scaled, alpha = alpha_scaled, sig_diag = sig_diag_scaled,
+                                       num_em_runs = num_em_runs, em_z_start_sd = z_start_sd,
+                                       lambda_type = lambda_type)
+    } else if (mix_type == 'uniform') {
+      ## right now only runs one em
+      ## does not return lfsr
+      suc_out <- uniform_succ_given_alpha(Y = Y1_scaled, alpha = alpha_scaled, sig_diag = sig_diag_scaled, num_em_runs = num_em_runs,
+                                          em_z_start = z_start_sd, lambda_type = lambda_type)
+    }
 
     suc_out$Y1_scaled <- Y1_scaled  ## ols estimates
     suc_out$alpha_scaled <- alpha_scaled

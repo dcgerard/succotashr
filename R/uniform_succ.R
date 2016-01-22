@@ -154,7 +154,7 @@ succotash_unif_fixed <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
 
     sum1 <- top_left / pnorm_diff_left - dpratios_left^2
     sum2 <- top_right / pnorm_diff_right - dpratios_right^2
-    sum0 <- 1 / sig_diag
+    sum0 <- -1 / sig_diag
 
     diag_weights <- rowSums(Tkj * cbind(sum1, sum0, sum2))
 
@@ -295,7 +295,7 @@ succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag)
 uniform_succ_given_alpha <-
   function(Y, alpha, sig_diag, num_em_runs = 10,
            a_seq = NULL, b_seq = NULL, lambda = NULL,
-           em_itermax = 100, em_tol = 10 ^ -6, pi_init = NULL, Z_init = NULL,
+           em_itermax = 200, em_tol = 10 ^ -6, pi_init = NULL, Z_init = NULL,
            em_z_start_sd = 1, pi_init_type = "random",
            lambda_type = "zero_conc", print_progress = TRUE, print_ziter = FALSE,
            true_Z = NULL, use_SQUAREM = FALSE) {
@@ -429,7 +429,7 @@ uniform_succ_given_alpha <-
 
     probs <- ashr::comppostprob(m = mix_fit, x = c(Y - az), s = sqrt(sig_diag), v = rep(1000, p))
     lfdr <- probs[length(a_seq) + 1,]
-    q_val <- ashr::qval.from.lfdr(lfdr)
+    qval <- ashr::qval.from.lfdr(lfdr)
 
     #        sq_out <-
     #            SQUAREM::fpiter(par = pi_Z, lambda = lambda, alpha = alpha,
@@ -438,5 +438,5 @@ uniform_succ_given_alpha <-
     #                            fixptfn = succotash_unif_fixed)
 
     return(list(Z = Z_new, pi_vals = pi_new, a_seq = a_seq, b_seq = b_seq,
-                lfdr = lfdr, betahat = betahat, qval))
+                lfdr = lfdr, betahat = betahat, qval = qval))
   }

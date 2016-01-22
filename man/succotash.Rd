@@ -6,7 +6,8 @@
 SHrinkage.}
 \usage{
 succotash(Y, X, k, sig_reg = 0.01, num_em_runs = 10, z_start_sd = 1,
-  fa_method = c("reg_mle", "quasi_mle"), lambda_type = "zero_conc")
+  fa_method = c("reg_mle", "quasi_mle"), lambda_type = "zero_conc",
+  mix_type = "normal")
 }
 \arguments{
 \item{Y}{An \code{n} by \code{p} matrix of response variables.}
@@ -36,6 +37,9 @@ for details on this second method.}
 
 \item{lambda_type}{See \code{\link{succotash_given_alpha}} for options on the
 regularization parameter of the mixing proportions.}
+
+\item{mix_type}{Should the prior be a mixture of normals \code{mix_type =
+'normal'} or a mixture of uniforms \code{mix_type = 'uniform'}?}
 }
 \value{
 See \code{\link{succotash_given_alpha}} for details of output.
@@ -75,6 +79,7 @@ The possible forms of factor analysis are a regularized maximum likelihood
 estimator, or a quasi-mle implemented in the package \code{cate}.
 }
 \seealso{
-\code{\link{succotash_given_alpha}}, \code{\link{factor_mle}}, \code{\link{succotash_summaries}}.
+\code{\link{succotash_given_alpha}}, \code{\link{factor_mle}},
+  \code{\link{succotash_summaries}}.
 }
 
