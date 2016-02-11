@@ -2,37 +2,40 @@
 % Please edit documentation in R/uniform_succ.R
 \name{succotash_llike_unif}
 \alias{succotash_llike_unif}
-\title{Calculates the loglikelihood of the SUCCOTASH model under uniform mixtures.}
+\title{Calculates the loglikelihood of the SUCCOTASH model under uniform
+mixtures.}
 \usage{
 succotash_llike_unif(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag)
 }
 \arguments{
-\item{pi_Z}{A vector. The first \code{M} values are the current values of
-\eqn{\pi}. The last \code{k} values are the current values of \eqn{Z}.}
+\item{pi_Z}{A vector. The first \code{M} values are the current
+values of \eqn{\pi}. The last \code{k} values are the current
+values of \eqn{Z}.}
 
 \item{lambda}{A vector. This is a length \code{M} vector with the
 regularization parameters for the mixing proportions.}
 
-\item{alpha}{A matrix. This is of dimension \code{p} by \code{k} and are the
-coefficients to the confounding variables.}
+\item{alpha}{A matrix. This is of dimension \code{p} by \code{k} and
+are the coefficients to the confounding variables.}
 
-\item{Y}{A matrix of dimension \code{p} by \code{1}. These are the observed
-regression coefficients of the observed variables.}
+\item{Y}{A matrix of dimension \code{p} by \code{1}. These are the
+observed regression coefficients of the observed variables.}
 
-\item{a_seq}{A vector of negative numerics containing the left endpoints of
-the mixing uniforms.}
+\item{a_seq}{A vector of negative numerics containing the left
+endpoints of the mixing uniforms.}
 
-\item{b_seq}{A vector of positiv numerics containing the right endpoints of
-the mixing uniforms.}
+\item{b_seq}{A vector of positiv numerics containing the right
+endpoints of the mixing uniforms.}
 
-\item{sig_diag}{A vector of length \code{p} containing the variances of the
-observations.}
+\item{sig_diag}{A vector of length \code{p} containing the variances
+of the observations.}
 }
 \description{
-Calculates the loglikelihood of the SUCCOTASH model under uniform mixtures.
+Calculates the loglikelihood of the SUCCOTASH model under uniform
+mixtures.
 }
 \seealso{
 \code{\link{uniform_succ_given_alpha}}
- \code{\link{succotash_unif_fixed}}.
+    \code{\link{succotash_unif_fixed}}.
 }
 

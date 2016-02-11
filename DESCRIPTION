@@ -14,5 +14,6 @@ Imports:
     SQUAREM (>= 2014.8-1),
     ashr
 Suggests: 
-    cate (>= 1.0.4)
+    cate (>= 1.0.4),
+    testthat
 RoxygenNote: 5.0.1

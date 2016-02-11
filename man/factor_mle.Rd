@@ -2,48 +2,53 @@
 % Please edit documentation in R/factor_mle.R
 \name{factor_mle}
 \alias{factor_mle}
-\title{Regularized maximum likelihood factor analysis with heteroscedastic columns.}
+\title{Regularized maximum likelihood factor analysis with heteroscedastic
+columns.}
 \usage{
 factor_mle(Y, k, itermax = 100, tol = 10^-6, print_diff = FALSE,
   sig_reg = 0.01)
 }
 \arguments{
-\item{Y}{A matrix. This is an \code{n} by \code{p} matrix, where the the
-columns are heteroscedastic.}
+\item{Y}{A matrix. This is an \code{n} by \code{p} matrix, where
+the the columns are heteroscedastic.}
 
 \item{k}{A numeric. The rank of the mean matrix.}
 
-\item{itermax}{An integer. The maximum number of block-coordinate ascent
-iterations to perform when calculating the MLE.}
+\item{itermax}{An integer. The maximum number of block-coordinate
+ascent iterations to perform when calculating the MLE.}
 
-\item{tol}{A numeric. When the difference from one of the ratio of two
-successive log-likelihoods is less than \code{tol}, the algorithm will
-stop.}
+\item{tol}{A numeric. When the difference from one of the ratio of
+two successive log-likelihoods is less than \code{tol}, the
+algorithm will stop.}
 
-\item{print_diff}{A logical. Should we print to the screen the updates?}
+\item{print_diff}{A logical. Should we print to the screen the
+updates?}
 
 \item{sig_reg}{The regularization parameter. Never set to 0.}
 }
 \value{
 \code{A} The low rank mean estimate.
 
-  \code{sig_diag} A vector of the variance estimates of the columns.
+  \code{sig_diag} A vector of the variance estimates of the
+  columns.
 }
 \description{
-\code{factor_mle} implements regularized maximum likelihood estimation on a
-data matrix where the mean is low rank (with the rank known) and the columns
-are heteroscedastic but independent.
+\code{factor_mle} implements regularized maximum likelihood
+estimation on a data matrix where the mean is low rank (with the
+rank known) and the columns are heteroscedastic but independent.
 }
 \details{
-This function calculates the regularized MLE under a normal model with a
-low-rank mean, a diagonal column covariance matrix, and an identity row
-covariance matrix. The regularization is on the covariance matrix.
+This function calculates the regularized MLE under a normal model
+with a low-rank mean, a diagonal column covariance matrix, and an
+identity row covariance matrix. The regularization is on the
+covariance matrix.
 
 The unregularized version of this factor analysis can be found in
-\href{http://projecteuclid.org/euclid.aoas/1356629055}{Sun et al (2012)}.
-However, the likelihood is unbounded and there are many "MLE's" that have
-that unbounded likelihood. This apparently was unnoticed in
-\href{http://projecteuclid.org/euclid.aoas/1356629055}{Sun et al (2012)}.
-\code{sig_reg} should never be set to 0.
+\href{http://projecteuclid.org/euclid.aoas/1356629055}{Sun et al
+(2012)}.  However, the likelihood is unbounded and there are many
+"MLE's" that have that unbounded likelihood. This apparently was
+unnoticed in
+\href{http://projecteuclid.org/euclid.aoas/1356629055}{Sun et al
+(2012)}.  \code{sig_reg} should never be set to 0.
 }
 

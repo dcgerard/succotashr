@@ -7,84 +7,95 @@
 succotash_em(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL,
   lambda = NULL, Z_init = NULL, itermax = 1500, tol = 10^-6,
   z_start_sd = 1, print_note = FALSE, pi_init_type = "random",
-  lambda_type = "zero_conc")
+  lambda_type = "zero_conc", lambda0 = 10)
 }
 \arguments{
-\item{Y}{A matrix of dimension \code{p} by \code{1}. These are the observed
-regression coefficients of the observed variables.}
+\item{Y}{A matrix of dimension \code{p} by \code{1}. These are the
+observed regression coefficients of the observed variables.}
 
-\item{alpha}{A matrix. This is of dimension \code{p} by \code{k} and are the
-coefficients to the confounding variables.}
+\item{alpha}{A matrix. This is of dimension \code{p} by \code{k}
+and are the coefficients to the confounding variables.}
 
-\item{sig_diag}{A vector of length \code{p} containing the variances of the
-observations.}
+\item{sig_diag}{A vector of length \code{p} containing the
+variances of the observations.}
 
-\item{tau_seq}{A vector of length \code{M} containing the standard deviations
-(not variances) of the mixing distributions.}
+\item{tau_seq}{A vector of length \code{M} containing the standard
+deviations (not variances) of the mixing distributions.}
 
-\item{pi_init}{A vector of length \code{M} containing the starting values of
-\eqn{\pi}. If \code{NULL}, then one of three options are implemented in
-calculating \code{pi_init} based on the value of \code{pi_init_type}.}
+\item{pi_init}{A vector of length \code{M} containing the starting
+values of \eqn{\pi}. If \code{NULL}, then one of three options
+are implemented in calculating \code{pi_init} based on the
+value of \code{pi_init_type}.}
 
 \item{lambda}{A vector. This is a length \code{M} vector with the
-regularization parameters for the mixing proportions. If \code{NULL} then
-refer to \code{lambda_type}.}
+regularization parameters for the mixing proportions. If
+\code{NULL} then refer to \code{lambda_type}.}
 
-\item{Z_init}{A \code{k} by \code{1} matrix. These are the initial values of
-the unobserved covariates. If its value is \code{NULL}, then each element
-of \code{Z_init} will be drawn from a mean zero normal with standard
-deviation \code{z_start_sd}.}
+\item{Z_init}{A \code{k} by \code{1} matrix. These are the initial
+values of the unobserved covariates. If its value is
+\code{NULL}, then each element of \code{Z_init} will be drawn
+from a mean zero normal with standard deviation
+\code{z_start_sd}.}
 
-\item{itermax}{An integer. The maximum number of fixed-point iterations to
-run the EM algorithm.}
+\item{itermax}{An integer. The maximum number of fixed-point
+iterations to run the EM algorithm.}
 
-\item{tol}{A numeric. The stopping criterion is the absolute difference of
-the ratio of subsequent iterations' log-likelihoods from 1.}
+\item{tol}{A numeric. The stopping criterion is the absolute
+difference of the ratio of subsequent iterations'
+log-likelihoods from 1.}
 
-\item{z_start_sd}{A positive numeric. If \code{Z_init} is \code{NULL}, then
-the starting values for \eqn{Z} are drawn from a mean zero normal with
-standard devation \code{z_start_sd}.}
+\item{z_start_sd}{A positive numeric. If \code{Z_init} is
+\code{NULL}, then the starting values for \eqn{Z} are drawn
+from a mean zero normal with standard devation
+\code{z_start_sd}.}
 
 \item{print_note}{Should we print that we're doing an EM?}
 
-\item{pi_init_type}{How should we choose the initial values of \eqn{\pi}.
-Possible values of \code{"random"}, \code{"uniform"}, and
-\code{"zero_conc"}. If \code{"random"} then the initial values of \eqn{\pi}
-are drawn uniformly over the probability simplex. If \code{"uniform"}, then
-each element of \code{pi_init} is given mass \code{1 / M}. If
-\code{"zero_conc"} then the last \code{M - 1} elements of \code{pi_init}
-are given mass \code{1 / p} and \code{pi_init[1]} is given mass \code{1 -
-sum(pi_init[2:M])}.}
+\item{pi_init_type}{How should we choose the initial values of
+\eqn{\pi}.  Possible values of \code{"random"},
+\code{"uniform"}, and \code{"zero_conc"}. If \code{"random"}
+then the initial values of \eqn{\pi} are drawn uniformly over
+the probability simplex. If \code{"uniform"}, then each element
+of \code{pi_init} is given mass \code{1 / M}. If
+\code{"zero_conc"} then the last \code{M - 1} elements of
+\code{pi_init} are given mass \code{1 / p} and
+\code{pi_init[1]} is given mass \code{1 - sum(pi_init[2:M])}.}
 
-\item{lambda_type}{If \code{lambda} is \code{NULL}, then how should we choose
-the regularization parameters. Two options are available. If
-\code{lambda_type} is \code{"zero_conc"}, then \code{lambda[1] = 10} and
-\code{lambda[2:M] = 1}. If \code{lambda_type} is \code{"ones"} then
-\code{lambda = 1}.}
+\item{lambda_type}{If \code{lambda} is \code{NULL}, then how should
+we choose the regularization parameters. Two options are
+available. If \code{lambda_type} is \code{"zero_conc"}, then
+\code{lambda[1] = 10} and \code{lambda[2:M] = 1}. If
+\code{lambda_type} is \code{"ones"} then \code{lambda = 1}.}
+
+\item{lambda0}{If \code{lambda_type = "zero_conc"}, then
+\code{lambda0} is the amount to penalize \code{pi0}.}
 }
 \value{
-\code{pi_vals} A vector of length \code{M}. The estimates of the
-  mixing proportions.
+\code{pi_vals} A vector of length \code{M}. The estimates
+    of the mixing proportions.
 
-  \code{Z} A matrix of dimension \code{k} by \code{1}. The estimates of the
-  confounder covariates.
+  \code{Z} A matrix of dimension \code{k} by \code{1}. The
+  estimates of the confounder covariates.
 
-  \code{llike} A numeric. The final value of the SUCCOTASH log-likelihood.
+  \code{llike} A numeric. The final value of the SUCCOTASH
+  log-likelihood.
 
-  \code{tau_seq} A vector of length \code{M}. The variances of the mixing
-  distribution.
+  \code{tau_seq} A vector of length \code{M}. The variances of the
+  mixing distribution.
 }
 \description{
-Let \eqn{Y} (\eqn{p} by \eqn{1}) be multivariate normal with mean \eqn{\beta
-+ \alpha Z} and diagonal covariance \eqn{\Sigma}, where \eqn{\alpha} and
-\eqn{\Sigma} are both known. If \eqn{\beta} is assumed to be a mixture of
-normals with known variances and unknown mixing proportions \eqn{\pi}
-(\eqn{p} by \eqn{1}), then this function will maximize the marginal
-likelihood over \eqn{Z} and \eqn{\pi}.
+Let \eqn{Y} (\eqn{p} by \eqn{1}) be multivariate normal with mean
+\eqn{\beta + \alpha Z} and diagonal covariance \eqn{\Sigma}, where
+\eqn{\alpha} and \eqn{\Sigma} are both known. If \eqn{\beta} is
+assumed to be a mixture of normals with known variances and unknown
+mixing proportions \eqn{\pi} (\eqn{p} by \eqn{1}), then this
+function will maximize the marginal likelihood over \eqn{Z} and
+\eqn{\pi}.
 }
 \details{
-This function uses the \code{SQUAREM} package with fixed point iteration
-\code{succotash_fixed} to run the EM. There can be a lot of local modes, so
-this function should be run at many starting locations.
+This function uses the \code{SQUAREM} package with fixed point
+iteration \code{succotash_fixed} to run the EM. There can be a lot
+of local modes, so this function should be run at many starting
+locations.
 }
 

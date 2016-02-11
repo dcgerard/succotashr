@@ -14,58 +14,64 @@ uniform_succ_given_alpha(Y, alpha, sig_diag, num_em_runs = 10, a_seq = NULL,
 \arguments{
 \item{Y}{A p by 1 matrix of numerics. The data.}
 
-\item{alpha}{A p by k matrix of numerics. The confounder coefficients.}
+\item{alpha}{A p by k matrix of numerics. The confounder
+coefficients.}
 
-\item{num_em_runs}{An integer. The number of em iterations to perform,
-starting at random locations.}
+\item{sig_diag}{A vector of the variances of \code{Y}.}
 
-\item{a_seq}{A vector of negative numerics in increasing order. The negative
-end points in an [a, 0] grid.}
+\item{num_em_runs}{An integer. The number of em iterations to
+perform, starting at random locations.}
 
-\item{b_seq}{A vector of positive numerics in increasing order. The positive
-end points in a [0, b] grid.}
+\item{a_seq}{A vector of negative numerics in increasing order. The
+negative end points in an [a, 0] grid.}
 
-\item{lambda}{A vector of numerics greater than or equal to 1, of length
-\code{length(a) + length(b) + 1}.}
+\item{b_seq}{A vector of positive numerics in increasing order. The
+positive end points in a [0, b] grid.}
 
-\item{em_itermax}{A positive integer. The maximum number of iterations to
-perform on the em step.}
+\item{lambda}{A vector of numerics greater than or equal to 1, of
+length \code{length(a) + length(b) + 1}.}
+
+\item{em_itermax}{A positive integer. The maximum number of
+iterations to perform on the em step.}
 
 \item{em_tol}{A positive numeric. The stopping criterion for the EM
 algorithm.}
 
-\item{pi_init}{A vector of non-negative numerics that sum of 1 of length
-\code{length(a) + length(b) + 1}. The initial values of the mixture probs.}
+\item{pi_init}{A vector of non-negative numerics that sum of 1 of
+length \code{length(a) + length(b) + 1}. The initial values of
+the mixture probs.}
 
-\item{Z_init}{A vector of length k of numerics. Starting values of Z.}
+\item{Z_init}{A vector of length k of numerics. Starting values of
+Z.}
 
-\item{em_z_start_sd}{A positive numeric. Z is initialized by iid normals with
-this standard deviation and mean 0.}
+\item{em_z_start_sd}{A positive numeric. Z is initialized by iid
+normals with this standard deviation and mean 0.}
 
-\item{pi_init_type}{Either "random", "uniform", or "zero_conc". How should we
-choose the initial mixture probabilities if pi_init is NULL? "random" will
-draw draw pi uniformly from the simplex. "uniform" will give each value
-equal mass. "zero_conc" will give more mass to 0 than any other
-probability.}
+\item{pi_init_type}{Either "random", "uniform", or "zero_conc". How
+should we choose the initial mixture probabilities if pi_init
+is NULL? "random" will draw draw pi uniformly from the
+simplex. "uniform" will give each value equal mass. "zero_conc"
+will give more mass to 0 than any other probability.}
 
-\item{lambda_type}{How should we regularize? 'unif' gives no regularization.
-'zero_conf' gives regularization at zero alone.}
+\item{lambda_type}{How should we regularize? 'unif' gives no
+regularization.  'zero_conf' gives regularization at zero
+alone.}
 
 \item{print_progress}{A logical. Should we plot the progress?}
 
-\item{print_ziter}{A logical. Should we print the progress of the Newton
-iterations for updating Z?}
+\item{print_ziter}{A logical. Should we print the progress of the
+Newton iterations for updating Z?}
 
 \item{true_Z}{The true Z values. Used for testing.}
 
-\item{use_SQUAREM}{A logical. Should we use SQUAREM to run the EM? Not quite
-implemented yet.}
+\item{use_SQUAREM}{A logical. Should we use SQUAREM to run the EM?
+Not quite implemented yet.}
 }
 \description{
 Second step of SUCCOTASH with uniform mixture.
 }
 \seealso{
 \code{\link{succotash_llike_unif}}
-  \code{\link{succotash_unif_fixed}}
+    \code{\link{succotash_unif_fixed}}
 }
 

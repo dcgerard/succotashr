@@ -9,21 +9,22 @@ draw_beta(pi_vals, tau_seq, p)
 \arguments{
 \item{pi_vals}{A vector length \code{M}. The mixing proportions.}
 
-\item{tau_seq}{A vector of length \code{M}. The mixing standard deviations.}
+\item{tau_seq}{A vector of length \code{M}. The mixing standard
+deviations.}
 
 \item{p}{An integer. The number of samples to draw.}
 }
 \value{
-beta A vector of length \code{p} that are drawn from the mean zero
-  mixture of normals.
+beta A vector of length \code{p} that are drawn from the
+    mean zero mixture of normals.
 }
 \description{
-Draw from a mean zero mixture of normals given mixing proportions and mixing
-standard deviations.
+Draw from a mean zero mixture of normals given mixing proportions
+and mixing standard deviations.
 }
 \details{
-Given mixing proportions \code{pi_vals}, and mixing standard deviations (not
-variances) \code{tau_seq}, this function will draw \code{p} samples from the
-mean zero mixture of normals.
+Given mixing proportions \code{pi_vals}, and mixing standard
+deviations (not variances) \code{tau_seq}, this function will draw
+\code{p} samples from the mean zero mixture of normals.
 }
 

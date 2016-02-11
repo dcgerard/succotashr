@@ -7,79 +7,91 @@ SHrinkage.}
 \usage{
 succotash(Y, X, k, sig_reg = 0.01, num_em_runs = 10, z_start_sd = 1,
   fa_method = c("reg_mle", "quasi_mle"), lambda_type = "zero_conc",
-  mix_type = "normal")
+  mix_type = "normal", lambda0 = 10)
 }
 \arguments{
 \item{Y}{An \code{n} by \code{p} matrix of response variables.}
 
-\item{X}{An \code{n} by \code{q} matrix of covariates. Only the variable in
-the last column is of interest.}
+\item{X}{An \code{n} by \code{q} matrix of covariates. Only the
+variable in the last column is of interest.}
 
-\item{k}{An integer. The number of hidden confounders. This can be estimated,
-for example by the \code{num.sv} function in the \code{sva} package
-available on Bioconductor.}
+\item{k}{An integer. The number of hidden confounders. This can be
+estimated, for example by the \code{num.sv} function in the
+\code{sva} package available on Bioconductor.}
 
-\item{sig_reg}{A numeric. If \code{fa_method} is \code{"reg_mle"}, then this
-is the value of the regularization parameter.}
+\item{sig_reg}{A numeric. If \code{fa_method} is \code{"reg_mle"},
+then this is the value of the regularization parameter.}
 
-\item{num_em_runs}{An integer. The number of times we should run the EM
-algorithm.}
+\item{num_em_runs}{An integer. The number of times we should run
+the EM algorithm.}
 
-\item{z_start_sd}{A positive numeric. At the beginning of each EM algorithm,
-\code{Z} is initiated with independent mean zero normals with standard
-deviation \code{z_start_sd}.}
+\item{z_start_sd}{A positive numeric. At the beginning of each EM
+algorithm, \code{Z} is initiated with independent mean zero
+normals with standard deviation \code{z_start_sd}.}
 
-\item{fa_method}{Which factor analysis method should we use? The regularized
-MLE implemented in \code{\link{factor_mle}} (\code{"reg_mle"}), or the
-quasi-MLE implemented in the package \code{cate} (\code{"quasi_mle"}). See
-\href{http://projecteuclid.org/euclid.aos/1334581749}{Bai and Li (2012)}
-for details on this second method.}
+\item{fa_method}{Which factor analysis method should we use? The
+regularized MLE implemented in \code{\link{factor_mle}}
+(\code{"reg_mle"}), or the quasi-MLE implemented in the package
+\code{cate} (\code{"quasi_mle"}). See
+\href{http://projecteuclid.org/euclid.aos/1334581749}{Bai and
+Li (2012)} for details on this second method.}
 
-\item{lambda_type}{See \code{\link{succotash_given_alpha}} for options on the
-regularization parameter of the mixing proportions.}
+\item{lambda_type}{See \code{\link{succotash_given_alpha}} for
+options on the regularization parameter of the mixing
+proportions.}
 
-\item{mix_type}{Should the prior be a mixture of normals \code{mix_type =
-'normal'} or a mixture of uniforms \code{mix_type = 'uniform'}?}
+\item{mix_type}{Should the prior be a mixture of normals
+\code{mix_type = 'normal'} or a mixture of uniforms
+\code{mix_type = 'uniform'}?}
+
+\item{lambda0}{If \code{lambda_type = "zero_conc"}, then
+\code{lambda0} is the amount to penalize \code{pi0}.}
 }
 \value{
-See \code{\link{succotash_given_alpha}} for details of output.
+See \code{\link{succotash_given_alpha}} for details of
+    output.
 }
 \description{
-This function implements the full SUCCOTASH method. First, it rotates the
-response and explanatory variables into a part that we use to estimate the
-confounding variables and the variances, and a part that we use to estimate
-the coefficients of the observed covariates. This function will implement a
-factor analysis for the first part then run
-\code{\link{succotash_given_alpha}} for the second part.
+This function implements the full SUCCOTASH method. First, it
+rotates the response and explanatory variables into a part that we
+use to estimate the confounding variables and the variances, and a
+part that we use to estimate the coefficients of the observed
+covariates. This function will implement a factor analysis for the
+first part then run \code{\link{succotash_given_alpha}} for the
+second part.
 }
 \details{
-The assumed mode is \deqn{Y = X\beta + Z\alpha + E.} \eqn{Y} is a \eqn{n} by
-\code{p} matrix of response varaibles. For example, each row might be an
-array of log-transformed and quantile normalized gene-expression data.
-\eqn{X} is a \eqn{n} by \eqn{q} matrix of observed covariates. It is assumed
-that all but the last column of which contains nuisance parameters. For
-example, the first column might be a vector of ones to include an intercept.
-\eqn{\beta} is a \eqn{q} by \eqn{p} matrix of corresponding coefficients.
-\eqn{Z} is a \eqn{n} by \eqn{k} matrix of confounder variables. \eqn{\alpha}
-is the corresponding \eqn{k} by \eqn{p} matrix of coefficients for the
-unobserved confounders. \eqn{E} is a \eqn{n} by \eqn{p} matrix of error
-terms. \eqn{E} is assumed to be matrix normal with identity row covariance
-and diagonal column covariance \eqn{\Sigma}. That is, the columns are
-heteroscedastic while the rows are homoscedastic independent.
+The assumed mode is \deqn{Y = X\beta + Z\alpha + E.} \eqn{Y} is a
+\eqn{n} by \code{p} matrix of response varaibles. For example, each
+row might be an array of log-transformed and quantile normalized
+gene-expression data.  \eqn{X} is a \eqn{n} by \eqn{q} matrix of
+observed covariates. It is assumed that all but the last column of
+which contains nuisance parameters. For example, the first column
+might be a vector of ones to include an intercept.  \eqn{\beta} is
+a \eqn{q} by \eqn{p} matrix of corresponding coefficients.  \eqn{Z}
+is a \eqn{n} by \eqn{k} matrix of confounder
+variables. \eqn{\alpha} is the corresponding \eqn{k} by \eqn{p}
+matrix of coefficients for the unobserved confounders. \eqn{E} is a
+\eqn{n} by \eqn{p} matrix of error terms. \eqn{E} is assumed to be
+matrix normal with identity row covariance and diagonal column
+covariance \eqn{\Sigma}. That is, the columns are heteroscedastic
+while the rows are homoscedastic independent.
 
 This function will first rotate \eqn{Y} and \eqn{X} using the QR
-decomposition. This separates the model into three parts. The first part only
-contains nuisance parameters, the second part contains the coefficients of
-interest, and the third part contains the confounders. \code{succotash}
-applies a factor analysis to the third part to estimate the confounding
-factors, then runs an EM algorithm on the second part to estimate the
-coefficients of interest.
+decomposition. This separates the model into three parts. The first
+part only contains nuisance parameters, the second part contains
+the coefficients of interest, and the third part contains the
+confounders. \code{succotash} applies a factor analysis to the
+third part to estimate the confounding factors, then runs an EM
+algorithm on the second part to estimate the coefficients of
+interest.
 
-The possible forms of factor analysis are a regularized maximum likelihood
-estimator, or a quasi-mle implemented in the package \code{cate}.
+The possible forms of factor analysis are a regularized maximum
+likelihood estimator, or a quasi-mle implemented in the package
+\code{cate}.
 }
 \seealso{
-\code{\link{succotash_given_alpha}}, \code{\link{factor_mle}},
-  \code{\link{succotash_summaries}}.
+\code{\link{succotash_given_alpha}},
+    \code{\link{factor_mle}}, \code{\link{succotash_summaries}}.
 }
 

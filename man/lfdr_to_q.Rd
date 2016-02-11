@@ -10,20 +10,21 @@ lfdr_to_q(lfdr)
 \item{lfdr}{A vector. The local false discovery rates.}
 }
 \value{
-\code{q_vals} A vector of the same length as \code{lfdr}. Contains
-  the q-values for each observation.
+\code{q_vals} A vector of the same length as
+    \code{lfdr}. Contains the q-values for each observation.
 }
 \description{
-This function will simply average over lfdr's larger than each component's
-lfdr.
+This function will simply average over lfdr's larger than each
+component's lfdr.
 }
 \details{
-These q-values provide average error rates over subsets of observations. See
-\href{http://projecteuclid.org/euclid.aos/1074290335}{Storey (2003)} for
-details.
+These q-values provide average error rates over subsets of
+observations. See
+\href{http://projecteuclid.org/euclid.aos/1074290335}{Storey
+(2003)} for details.
 }
 \seealso{
 \code{\link{succotash_summaries}},
-  \code{\link{succotash_given_alpha}}.
+    \code{\link{succotash_given_alpha}}.
 }
 

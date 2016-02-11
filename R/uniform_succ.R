@@ -1,38 +1,42 @@
 
 #'A fixed point iteration in the mixture of uniforms EM.
 #'
-#'This is a fixed-point iteration for the SUCCOTASH EM algorithm. This updates
-#'the estimate of the prior and the estimate of the hidden covariates.
+#'This is a fixed-point iteration for the SUCCOTASH EM algorithm. This
+#' updates the estimate of the prior and the estimate of the hidden
+#' covariates.
 #'
-#'@param pi_Z A vector. The first \code{M} values are the current values of
-#'  \eqn{\pi}. The last \code{k} values are the current values of \eqn{Z}.
+#'@param pi_Z A vector. The first \code{M} values are the current
+#'     values of \eqn{\pi}. The last \code{k} values are the current
+#'     values of \eqn{Z}.
 #'@param lambda A vector. This is a length \code{M} vector with the
-#'  regularization parameters for the mixing proportions.
-#'@param alpha A matrix. This is of dimension \code{p} by \code{k} and are the
-#'  coefficients to the confounding variables.
-#'@param Y A matrix of dimension \code{p} by \code{1}. These are the observed
-#'  regression coefficients of the observed variables.
-#'@param a_seq A vector of negative numerics containing the left endpoints of
-#'  the mixing uniforms.
-#'@param b_seq A vector of positiv numerics containing the right endpoints of
-#'  the mixing uniforms.
-#'@param sig_diag A vector of length \code{p} containing the variances of the
-#'  observations.
-#'@param print_ziter A logical. Should we we print each iteration of the Z
-#'  optimization?
-#'@param newt_itermax A positive integer. The maximum number of Newton steps to
-#'  perform in updating \eqn{Z}.
-#'@param tol A positive numeric. The stopping criterion for Newton's method in
-#'  updating Z.
+#'     regularization parameters for the mixing proportions.
+#'@param alpha A matrix. This is of dimension \code{p} by \code{k} and
+#'     are the coefficients to the confounding variables.
+#'@param Y A matrix of dimension \code{p} by \code{1}. These are the
+#'     observed regression coefficients of the observed variables.
+#'@param a_seq A vector of negative numerics containing the left
+#'     endpoints of the mixing uniforms.
+#'@param b_seq A vector of positiv numerics containing the right
+#'     endpoints of the mixing uniforms.
+#'@param sig_diag A vector of length \code{p} containing the variances
+#'     of the observations.
+#'@param print_ziter A logical. Should we we print each iteration of
+#'     the Z optimization?
+#'@param newt_itermax A positive integer. The maximum number of Newton
+#'     steps to perform in updating \eqn{Z}.
+#'@param tol A positive numeric. The stopping criterion for Newton's
+#'     method in updating Z.
 #'
-#'@return \code{pi_new} A vector of length \code{M}. The update for the mixing
-#'  components.
+#'@return \code{pi_new} A vector of length \code{M}. The update for
+#'     the mixing components.
 #'
-#'  \code{Z_new} A vector of length \code{k}. The update for the confounder
-#'  covariates.
+#'  \code{Z_new} A vector of length \code{k}. The update for the
+#'  confounder covariates.
 #'
 #'@seealso \code{\link{uniform_succ_given_alpha}}
-#'  \code{\link{succotash_llike_unif}}
+#'     \code{\link{succotash_llike_unif}}
+#'
+#' @export
 succotash_unif_fixed <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
                                  print_ziter = TRUE, newt_itermax = 100, tol = 10^-4) {
   M <- length(a_seq) + length(b_seq) + 1
@@ -79,7 +83,8 @@ succotash_unif_fixed <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
   #mean_mat_left <- matrix(rep(Y-az, length(a_seq)), nrow = p)
   #sig_left <- matrix(rep(sqrt(sig_diag), length(a_seq)), nrow = p)
   #sig_right <- matrix(rep(sqrt(sig_diag), length(b_seq)), nrow = p)
-  #pnorm_diff_r <- pnorm(q = obs_mat_right, mean = mean_mat_right, sd = sig_right) -  pnorm(q = 0, mean = mean_mat_right, sd = sig_left)
+  #pnorm_diff_r <- pnorm(q = obs_mat_right, mean = mean_mat_right,
+  #                      sd = sig_right) -  pnorm(q = 0, mean = mean_mat_right, sd = sig_left)
 
 
   ## calculate new pi values
@@ -191,26 +196,29 @@ succotash_unif_fixed <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
   return(list(pi_Z = c(pi_new, Z_new), llike_new = llike_new, eval_hess = eval_hess))
 }
 
-#'Calculates the loglikelihood of the SUCCOTASH model under uniform mixtures.
+#'Calculates the loglikelihood of the SUCCOTASH model under uniform
+#' mixtures.
 #'
-#'@param pi_Z A vector. The first \code{M} values are the current values of
-#'  \eqn{\pi}. The last \code{k} values are the current values of \eqn{Z}.
+#'@param pi_Z A vector. The first \code{M} values are the current
+#'     values of \eqn{\pi}. The last \code{k} values are the current
+#'     values of \eqn{Z}.
 #'@param lambda A vector. This is a length \code{M} vector with the
-#'  regularization parameters for the mixing proportions.
-#'@param alpha A matrix. This is of dimension \code{p} by \code{k} and are the
-#'  coefficients to the confounding variables.
-#'@param Y A matrix of dimension \code{p} by \code{1}. These are the observed
-#'  regression coefficients of the observed variables.
-#'@param a_seq A vector of negative numerics containing the left endpoints of
-#'  the mixing uniforms.
-#'@param b_seq A vector of positiv numerics containing the right endpoints of
-#'  the mixing uniforms.
-#'@param sig_diag A vector of length \code{p} containing the variances of the
-#'  observations.
+#'     regularization parameters for the mixing proportions.
+#'@param alpha A matrix. This is of dimension \code{p} by \code{k} and
+#'     are the coefficients to the confounding variables.
+#'@param Y A matrix of dimension \code{p} by \code{1}. These are the
+#'     observed regression coefficients of the observed variables.
+#'@param a_seq A vector of negative numerics containing the left
+#'     endpoints of the mixing uniforms.
+#'@param b_seq A vector of positiv numerics containing the right
+#'     endpoints of the mixing uniforms.
+#'@param sig_diag A vector of length \code{p} containing the variances
+#'     of the observations.
 #'
 #'@seealso \code{\link{uniform_succ_given_alpha}}
-#'  \code{\link{succotash_unif_fixed}}.
+#'     \code{\link{succotash_unif_fixed}}.
 #'
+#' @export
 succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag) {
   M <- length(a_seq) + length(b_seq) + 1
   p <- nrow(Y)
@@ -258,40 +266,47 @@ succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag)
 #' Second step of SUCCOTASH with uniform mixture.
 #'
 #' @param Y A p by 1 matrix of numerics. The data.
-#' @param alpha A p by k matrix of numerics. The confounder coefficients.
-#' @param num_em_runs An integer. The number of em iterations to perform,
-#'   starting at random locations.
-#' @param a_seq A vector of negative numerics in increasing order. The negative
-#'   end points in an [a, 0] grid.
-#' @param b_seq A vector of positive numerics in increasing order. The positive
-#'   end points in a [0, b] grid.
-#' @param lambda A vector of numerics greater than or equal to 1, of length
-#'   \code{length(a) + length(b) + 1}.
-#' @param em_itermax A positive integer. The maximum number of iterations to
-#'   perform on the em step.
+#' @param alpha A p by k matrix of numerics. The confounder
+#'     coefficients.
+#' @param num_em_runs An integer. The number of em iterations to
+#'     perform, starting at random locations.
+#' @param a_seq A vector of negative numerics in increasing order. The
+#'     negative end points in an [a, 0] grid.
+#' @param b_seq A vector of positive numerics in increasing order. The
+#'     positive end points in a [0, b] grid.
+#' @param lambda A vector of numerics greater than or equal to 1, of
+#'     length \code{length(a) + length(b) + 1}.
+#' @param em_itermax A positive integer. The maximum number of
+#'     iterations to perform on the em step.
 #' @param em_tol A positive numeric. The stopping criterion for the EM
-#'   algorithm.
-#' @param pi_init A vector of non-negative numerics that sum of 1 of length
-#'   \code{length(a) + length(b) + 1}. The initial values of the mixture probs.
-#' @param Z_init A vector of length k of numerics. Starting values of Z.
-#' @param em_z_start_sd A positive numeric. Z is initialized by iid normals with
-#'   this standard deviation and mean 0.
-#' @param pi_init_type Either "random", "uniform", or "zero_conc". How should we
-#'   choose the initial mixture probabilities if pi_init is NULL? "random" will
-#'   draw draw pi uniformly from the simplex. "uniform" will give each value
-#'   equal mass. "zero_conc" will give more mass to 0 than any other
-#'   probability.
-#' @param lambda_type How should we regularize? 'unif' gives no regularization.
-#'   'zero_conf' gives regularization at zero alone.
+#'     algorithm.
+#' @param pi_init A vector of non-negative numerics that sum of 1 of
+#'     length \code{length(a) + length(b) + 1}. The initial values of
+#'     the mixture probs.
+#' @param Z_init A vector of length k of numerics. Starting values of
+#'     Z.
+#' @param em_z_start_sd A positive numeric. Z is initialized by iid
+#'     normals with this standard deviation and mean 0.
+#' @param pi_init_type Either "random", "uniform", or "zero_conc". How
+#'     should we choose the initial mixture probabilities if pi_init
+#'     is NULL? "random" will draw draw pi uniformly from the
+#'     simplex. "uniform" will give each value equal mass. "zero_conc"
+#'     will give more mass to 0 than any other probability.
+#' @param lambda_type How should we regularize? 'unif' gives no
+#'     regularization.  'zero_conf' gives regularization at zero
+#'     alone.
 #' @param print_progress A logical. Should we plot the progress?
-#' @param print_ziter A logical. Should we print the progress of the Newton
-#'   iterations for updating Z?
+#' @param print_ziter A logical. Should we print the progress of the
+#'     Newton iterations for updating Z?
 #' @param true_Z The true Z values. Used for testing.
-#' @param use_SQUAREM A logical. Should we use SQUAREM to run the EM? Not quite
-#'   implemented yet.
+#' @param use_SQUAREM A logical. Should we use SQUAREM to run the EM?
+#'     Not quite implemented yet.
+#' @param sig_diag A vector of the variances of \code{Y}.
 #'
 #' @seealso \code{\link{succotash_llike_unif}}
-#'   \code{\link{succotash_unif_fixed}}
+#'     \code{\link{succotash_unif_fixed}}
+#'
+#' @export
 uniform_succ_given_alpha <-
   function(Y, alpha, sig_diag, num_em_runs = 10,
            a_seq = NULL, b_seq = NULL, lambda = NULL,
@@ -375,7 +390,8 @@ uniform_succ_given_alpha <-
 
 
     pi_new <- pi_Z[1:M]
-    plot(c(a_seq, 0, b_seq), pi_new, type = "h", ylab = expression(pi), xlab = "a or b", ylim = c(0,1))
+    plot(c(a_seq, 0, b_seq), pi_new, type = "h", ylab = expression(pi), xlab = "a or b",
+         ylim = c(0,1))
     llike_current <- succotash_llike_unif(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag)
     mtext(side = 3, paste("llike =", round(llike_current)))
 
@@ -421,11 +437,13 @@ uniform_succ_given_alpha <-
       em_index <- em_index + 1
     }
 
-    mix_fit <- ashr::unimix(pi = pi_new, a = c(a_seq, rep(0, length(b_seq) + 1)), b = c(rep(0, length(a_seq) + 1), b_seq))
+    mix_fit <- ashr::unimix(pi = pi_new, a = c(a_seq, rep(0, length(b_seq) + 1)),
+                            b = c(rep(0, length(a_seq) + 1), b_seq))
 
     az <- alpha %*% matrix(Z_new, ncol = 1)
 
-    betahat <- ashr::postmean(m = mix_fit, betahat = c(Y - az), sebetahat = sqrt(sig_diag), v = rep(1000, p))
+    betahat <- ashr::postmean(m = mix_fit, betahat = c(Y - az), sebetahat = sqrt(sig_diag),
+                              v = rep(1000, p))
 
     probs <- ashr::comppostprob(m = mix_fit, x = c(Y - az), s = sqrt(sig_diag), v = rep(1000, p))
     lfdr <- probs[length(a_seq) + 1,]

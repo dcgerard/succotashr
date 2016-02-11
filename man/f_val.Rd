@@ -9,10 +9,11 @@ f_val(Y, sig_diag, A, lambda = 0.01)
 \arguments{
 \item{Y}{A matrix. This is the \code{n} by \code{p} data matrix.}
 
-\item{sig_diag}{A vector of length \code{p}. These are the estimates of the
-variances of the columns of \code{Y}.}
+\item{sig_diag}{A vector of length \code{p}. These are the
+estimates of the variances of the columns of \code{Y}.}
 
-\item{A}{A matrix. This the the \code{n} by {p} low rank mean matrix.}
+\item{A}{A matrix. This the the \code{n} by {p} low rank mean
+matrix.}
 
 \item{lambda}{A numeric. The regularization parameter.}
 }
@@ -20,8 +21,8 @@ variances of the columns of \code{Y}.}
 \code{llike} A numeric. The regularized log-likelihood.
 }
 \description{
-\code{f_val} will return the regularized normal log-likelihood where thre is
-a low rank mean matrix and only a diagonal covariance matrix along the
-columns.
+\code{f_val} will return the regularized normal log-likelihood
+where thre is a low rank mean matrix and only a diagonal covariance
+matrix along the columns.
 }
 
