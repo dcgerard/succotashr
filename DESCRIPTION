@@ -8,7 +8,7 @@ Description: An implementation of SUCCOTASH in R. This package contains
     functions that will adjust for hidden confounders in the normal linear model
     with a unimodal prior. The main function, succotash(), will iteratively estimate
     a unimodal prior of the regression coefficients and the hidden covariates.
-License: GPL-2
+License: GPL-3 | file LICENSE
 LazyData: TRUE
 Imports:
     SQUAREM (>= 2014.8-1),

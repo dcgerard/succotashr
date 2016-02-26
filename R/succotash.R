@@ -1,28 +1,26 @@
 #' A fixed-point iteration of the EM algorithm.
 #'
-#' This is a fixed-point iteration for the SUCCOTASH EM
-#' algorithm. This updates the estimte of the prior and the estimate
-#' of the hidden covariates.
+#' This is a fixed-point iteration for the SUCCOTASH EM algorithm. This updates
+#' the estimte of the prior and the estimate of the hidden covariates.
 #'
-#' @param pi_Z A vector. The first \code{M} values are the current
-#'     values of \eqn{\pi}. The last \code{k} values are the current
-#'     values of \eqn{Z}.
+#' @param pi_Z A vector. The first \code{M} values are the current values of
+#'   \eqn{\pi}. The last \code{k} values are the current values of \eqn{Z}.
 #' @param lambda A vector. This is a length \code{M} vector with the
-#'     regularization parameters for the mixing proportions.
-#' @param alpha A matrix. This is of dimension \code{p} by \code{k}
-#'     and are the coefficients to the confounding variables.
-#' @param Y A matrix of dimension \code{p} by \code{1}. These are the
-#'     observed regression coefficients of the observed variables.
-#' @param tau_seq A vector of length \code{M} containing the variances
-#'     of the mixing distributions.
-#' @param sig_diag A vector of length \code{p} containing the
-#'     variances of the observations.
+#'   regularization parameters for the mixing proportions.
+#' @param alpha A matrix. This is of dimension \code{p} by \code{k} and are the
+#'   coefficients to the confounding variables.
+#' @param Y A matrix of dimension \code{p} by \code{1}. These are the observed
+#'   regression coefficients of the observed variables.
+#' @param tau_seq A vector of length \code{M} containing the standard deviations
+#'   (not variances) of the mixing distributions.
+#' @param sig_diag A vector of length \code{p} containing the variances of the
+#'   observations.
 #'
-#' @return \code{pi_new} A vector of length \code{M}. The update for
-#'     the mixing components.
+#' @return \code{pi_new} A vector of length \code{M}. The update for the mixing
+#'   components.
 #'
-#'   \code{Z_new} A vector of length \code{k}. The update for the
-#'   confounder covariates.
+#'   \code{Z_new} A vector of length \code{k}. The update for the confounder
+#'   covariates.
 succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag) {
     M <- length(tau_seq)
     p <- nrow(Y)
@@ -63,24 +61,23 @@ succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag) {
 #' \code{succotash_llike} returns the SUCCOTASH log-likelihood. Returning the
 #' regularized log-likelihood is currently not implemented.
 #'
-#' @param pi_Z A vector. The first \code{M} values are the current
-#'     values of \eqn{\pi}. The last \code{k} values are the current
-#'     values of \eqn{Z}.
+#' @param pi_Z A vector. The first \code{M} values are the current values of
+#'   \eqn{\pi}. The last \code{k} values are the current values of \eqn{Z}.
 #' @param lambda A vector. This is a length \code{M} vector with the
-#'     regularization parameters for the mixing proportions.
-#' @param alpha A matrix. This is of dimension \code{p} by \code{k}
-#'     and are the coefficients to the confounding variables.
-#' @param Y A matrix of dimension \code{p} by \code{1}. These are the
-#'     observed regression coefficients of the observed variables.
-#' @param tau_seq A vector of length \code{M} containing the variances
-#'     of the mixing distributions.
-#' @param sig_diag A vector of length \code{p} containing the
-#'     variances of the observations.
+#'   regularization parameters for the mixing proportions.
+#' @param alpha A matrix. This is of dimension \code{p} by \code{k} and are the
+#'   coefficients to the confounding variables.
+#' @param Y A matrix of dimension \code{p} by \code{1}. These are the observed
+#'   regression coefficients of the observed variables.
+#' @param tau_seq A vector of length \code{M} containing the standard deviations
+#'   (not variances) of the mixing distributions.
+#' @param sig_diag A vector of length \code{p} containing the variances of the
+#'   observations.
 #'
 #' @export
 #'
 #' @return \code{llike_new} A numeric. The value of the SUCCOTASH
-#'     log-likelihood.
+#'   log-likelihood.
 succotash_llike <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag) {
     M <- length(tau_seq)
     p <- nrow(Y)
@@ -407,84 +404,81 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 10, print_st
 #' Surrogate and Confounder Correction Occuring Together with Adaptive
 #' SHrinkage.
 #'
-#' This function implements the full SUCCOTASH method. First, it
-#' rotates the response and explanatory variables into a part that we
-#' use to estimate the confounding variables and the variances, and a
-#' part that we use to estimate the coefficients of the observed
-#' covariates. This function will implement a factor analysis for the
-#' first part then run \code{\link{succotash_given_alpha}} for the
-#' second part.
+#' This function implements the full SUCCOTASH method. First, it rotates the
+#' response and explanatory variables into a part that we use to estimate the
+#' confounding variables and the variances, and a part that we use to estimate
+#' the coefficients of the observed covariates. This function will implement a
+#' factor analysis for the first part then run
+#' \code{\link{succotash_given_alpha}} for the second part.
 #'
-#' The assumed mode is \deqn{Y = X\beta + Z\alpha + E.} \eqn{Y} is a
-#' \eqn{n} by \code{p} matrix of response varaibles. For example, each
-#' row might be an array of log-transformed and quantile normalized
-#' gene-expression data.  \eqn{X} is a \eqn{n} by \eqn{q} matrix of
-#' observed covariates. It is assumed that all but the last column of
-#' which contains nuisance parameters. For example, the first column
-#' might be a vector of ones to include an intercept.  \eqn{\beta} is
-#' a \eqn{q} by \eqn{p} matrix of corresponding coefficients.  \eqn{Z}
-#' is a \eqn{n} by \eqn{k} matrix of confounder
-#' variables. \eqn{\alpha} is the corresponding \eqn{k} by \eqn{p}
-#' matrix of coefficients for the unobserved confounders. \eqn{E} is a
-#' \eqn{n} by \eqn{p} matrix of error terms. \eqn{E} is assumed to be
-#' matrix normal with identity row covariance and diagonal column
-#' covariance \eqn{\Sigma}. That is, the columns are heteroscedastic
-#' while the rows are homoscedastic independent.
+#' The assumed mode is \deqn{Y = X\beta + Z\alpha + E.} \eqn{Y} is a \eqn{n} by
+#' \code{p} matrix of response varaibles. For example, each row might be an
+#' array of log-transformed and quantile normalized gene-expression data.
+#' \eqn{X} is a \eqn{n} by \eqn{q} matrix of observed covariates. It is assumed
+#' that all but the last column of which contains nuisance parameters. For
+#' example, the first column might be a vector of ones to include an intercept.
+#' \eqn{\beta} is a \eqn{q} by \eqn{p} matrix of corresponding coefficients.
+#' \eqn{Z} is a \eqn{n} by \eqn{k} matrix of confounder variables. \eqn{\alpha}
+#' is the corresponding \eqn{k} by \eqn{p} matrix of coefficients for the
+#' unobserved confounders. \eqn{E} is a \eqn{n} by \eqn{p} matrix of error
+#' terms. \eqn{E} is assumed to be matrix normal with identity row covariance
+#' and diagonal column covariance \eqn{\Sigma}. That is, the columns are
+#' heteroscedastic while the rows are homoscedastic independent.
 #'
 #' This function will first rotate \eqn{Y} and \eqn{X} using the QR
-#' decomposition. This separates the model into three parts. The first
-#' part only contains nuisance parameters, the second part contains
-#' the coefficients of interest, and the third part contains the
-#' confounders. \code{succotash} applies a factor analysis to the
-#' third part to estimate the confounding factors, then runs an EM
-#' algorithm on the second part to estimate the coefficients of
-#' interest.
+#' decomposition. This separates the model into three parts. The first part only
+#' contains nuisance parameters, the second part contains the coefficients of
+#' interest, and the third part contains the confounders. \code{succotash}
+#' applies a factor analysis to the third part to estimate the confounding
+#' factors, then runs an EM algorithm on the second part to estimate the
+#' coefficients of interest.
 #'
-#' The possible forms of factor analysis are a regularized maximum
-#' likelihood estimator, or a quasi-mle implemented in the package
-#' \code{cate}.
+#' The possible forms of factor analysis are a regularized maximum likelihood
+#' estimator, or a quasi-mle implemented in the package \code{cate}.
 #'
 #' @param Y An \code{n} by \code{p} matrix of response variables.
-#' @param X An \code{n} by \code{q} matrix of covariates. Only the
-#'     variable in the last column is of interest.
-#' @param k An integer. The number of hidden confounders. This can be
-#'     estimated, for example by the \code{num.sv} function in the
-#'     \code{sva} package available on Bioconductor.
-#' @param sig_reg A numeric. If \code{fa_method} is \code{"reg_mle"},
-#'     then this is the value of the regularization parameter.
-#' @param num_em_runs An integer. The number of times we should run
-#'     the EM algorithm.
-#' @param z_start_sd A positive numeric. At the beginning of each EM
-#'     algorithm, \code{Z} is initiated with independent mean zero
-#'     normals with standard deviation \code{z_start_sd}.
-#' @param fa_method Which factor analysis method should we use? The
-#'     regularized MLE implemented in \code{\link{factor_mle}}
-#'     (\code{"reg_mle"}), or the quasi-MLE implemented in the package
-#'     \code{cate} (\code{"quasi_mle"}). See
-#'     \href{http://projecteuclid.org/euclid.aos/1334581749}{Bai and
-#'     Li (2012)} for details on this second method.
-#' @param lambda_type See \code{\link{succotash_given_alpha}} for
-#'     options on the regularization parameter of the mixing
-#'     proportions.
-#' @param mix_type Should the prior be a mixture of normals
-#'     \code{mix_type = 'normal'} or a mixture of uniforms
-#'     \code{mix_type = 'uniform'}?
-#' @param lambda0 If \code{lambda_type = "zero_conc"}, then
-#'     \code{lambda0} is the amount to penalize \code{pi0}.
+#' @param X An \code{n} by \code{q} matrix of covariates. Only the variable in
+#'   the last column is of interest.
+#' @param k An integer. The number of hidden confounders. This can be estimated,
+#'   for example by the \code{num.sv} function in the \code{sva} package
+#'   available on Bioconductor.
+#' @param sig_reg A numeric. If \code{fa_method} is \code{"reg_mle"}, then this
+#'   is the value of the regularization parameter.
+#' @param num_em_runs An integer. The number of times we should run the EM
+#'   algorithm.
+#' @param z_start_sd A positive numeric. At the beginning of each EM algorithm,
+#'   \code{Z} is initiated with independent mean zero normals with standard
+#'   deviation \code{z_start_sd}.
+#' @param fa_method Which factor analysis method should we use? The regularized
+#'   MLE implemented in \code{\link{factor_mle}} (\code{"reg_mle"}), or two
+#'   methods fromthe package \code{cate}: the quasi-MLE (\code{"quasi_mle"})
+#'   from \href{http://projecteuclid.org/euclid.aos/1334581749}{Bai and Li
+#'   (2012)} or just naive PCA (\code{"pca"}). See
+#' @param lambda_type See \code{\link{succotash_given_alpha}} for options on the
+#'   regularization parameter of the mixing proportions.
+#' @param mix_type Should the prior be a mixture of normals \code{mix_type =
+#'   'normal'} or a mixture of uniforms \code{mix_type = 'uniform'}?
+#' @param lambda0 If \code{lambda_type = "zero_conc"}, then \code{lambda0} is
+#'   the amount to penalize \code{pi0}.
+#' @param tau_seq A vector of length \code{M} containing the standard deviations
+#'   (not variances) of the mixing distributions.
+#' @param em_pi_init A vector of length \code{M} containing the starting values
+#'   of \eqn{\pi}. If \code{NULL}, then one of three options are implemented in
+#'   calculating \code{pi_init} based on the value of \code{pi_init_type}. Only
+#'   available in normal mixtures for now.
 #'
-#' @return See \code{\link{succotash_given_alpha}} for details of
-#'     output.
+#' @return See \code{\link{succotash_given_alpha}} for details of output.
 #'
 #' @export
 #'
-#' @seealso \code{\link{succotash_given_alpha}},
-#'     \code{\link{factor_mle}}, \code{\link{succotash_summaries}}.
+#' @seealso \code{\link{succotash_given_alpha}}, \code{\link{factor_mle}},
+#'   \code{\link{succotash_summaries}}.
 succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 10, z_start_sd = 1,
-                      fa_method = c("reg_mle", "quasi_mle"), lambda_type = "zero_conc",
-                      mix_type = 'normal', lambda0 = 10) {
+                      fa_method = c("reg_mle", "quasi_mle", "pca"), lambda_type = "zero_conc",
+                      mix_type = 'normal', lambda0 = 10, tau_seq = NULL, em_pi_init = NULL) {
     ncol_x <- ncol(X)
 
-    fa_method <- match.arg(fa_method, c("reg_mle", "quasi_mle"))
+    fa_method <- match.arg(fa_method, c("reg_mle", "quasi_mle", "pca"))
 
     qr_x <- qr(X)
     ## multiply by sign so that it matches with beta_hat_ols
@@ -504,6 +498,10 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 10, z_start_sd = 1,
         mle_out <- factor_mle(Y_tilde[2:n, ], k = k, sig_reg = sig_reg, itermax = 1000)
         alpha <- svd(mle_out$A, nv = k, nu = 0)$v
         sig_diag <- mle_out$sig_diag
+    } else if (fa_method == "pca" & requireNamespace("cate", quietly = TRUE)) {
+        pca_out <- cate::fa.pc(Y = Y_tilde[2:n, ], r = k)
+        alpha <- pca_out$Gamma
+        sig_diag <- pca_out$Sigma
     }
 
 
@@ -517,7 +515,8 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 10, z_start_sd = 1,
       suc_out <- succotash_given_alpha(Y = Y1_scaled, alpha = alpha_scaled,
                                        sig_diag = sig_diag_scaled,
                                        num_em_runs = num_em_runs, em_z_start_sd = z_start_sd,
-                                       lambda_type = lambda_type, lambda0 = lambda0)
+                                       lambda_type = lambda_type, lambda0 = lambda0,
+                                       tau_seq = tau_seq, em_pi_init = em_pi_init)
     } else if (mix_type == 'uniform') {
       ## right now only runs one em
       ## does not return lfsr

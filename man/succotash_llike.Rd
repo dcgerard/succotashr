@@ -7,28 +7,27 @@
 succotash_llike(pi_Z, lambda, alpha, Y, tau_seq, sig_diag)
 }
 \arguments{
-\item{pi_Z}{A vector. The first \code{M} values are the current
-values of \eqn{\pi}. The last \code{k} values are the current
-values of \eqn{Z}.}
+\item{pi_Z}{A vector. The first \code{M} values are the current values of
+\eqn{\pi}. The last \code{k} values are the current values of \eqn{Z}.}
 
 \item{lambda}{A vector. This is a length \code{M} vector with the
 regularization parameters for the mixing proportions.}
 
-\item{alpha}{A matrix. This is of dimension \code{p} by \code{k}
-and are the coefficients to the confounding variables.}
+\item{alpha}{A matrix. This is of dimension \code{p} by \code{k} and are the
+coefficients to the confounding variables.}
 
-\item{Y}{A matrix of dimension \code{p} by \code{1}. These are the
-observed regression coefficients of the observed variables.}
+\item{Y}{A matrix of dimension \code{p} by \code{1}. These are the observed
+regression coefficients of the observed variables.}
 
-\item{tau_seq}{A vector of length \code{M} containing the variances
-of the mixing distributions.}
+\item{tau_seq}{A vector of length \code{M} containing the standard deviations
+(not variances) of the mixing distributions.}
 
-\item{sig_diag}{A vector of length \code{p} containing the
-variances of the observations.}
+\item{sig_diag}{A vector of length \code{p} containing the variances of the
+observations.}
 }
 \value{
 \code{llike_new} A numeric. The value of the SUCCOTASH
-    log-likelihood.
+  log-likelihood.
 }
 \description{
 \code{succotash_llike} returns the SUCCOTASH log-likelihood. Returning the
