@@ -1,4 +1,7 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+Description
+-----------
+
 Let \[
 Y = X\beta + Z\alpha + E,
 \] for
@@ -13,3 +16,23 @@ Y = X\beta + Z\alpha + E,
 Not accounting for the hidden covariates, \(Z\), can reduced power and result in poor control of false discovery rate.
 
 `succotashr` fits this model under a two-step empirical Bayesian approach. It places a non-parametric prior on \(\beta\) and jointly estimates \(\beta\) and \(Z\alpha\). The main function is `succotash`.
+
+Installation
+------------
+
+To install, run the following code in `R`:
+
+``` r
+install.packages(c("devtools", "SQUAREM"))
+devtools::install_github("stephens999/ashr")
+devtools::install_github("dcgerard/succotashr")
+```
+
+The following packages are suggested:
+
+``` r
+install.packages("cate")
+devtools::install_github("NKweiwang/flash")
+source("https://bioconductor.org/biocLite.R")
+biocLite("limma")
+```

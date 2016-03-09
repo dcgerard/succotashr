@@ -2,6 +2,8 @@
 
 export(draw_beta)
 export(factor_mle)
+export(mod_fa)
+export(pca_shrinkvar)
 export(succotash)
 export(succotash_em)
 export(succotash_given_alpha)

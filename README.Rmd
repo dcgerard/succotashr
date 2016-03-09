@@ -13,6 +13,8 @@ knitr::opts_chunk$set(
   fig.path = "README-"
 )
 ```
+
+## Description
 Let 
 $$
 Y = X\beta + Z\alpha + E,
@@ -29,3 +31,19 @@ for
 Not accounting for the hidden covariates, $Z$, can reduced power and result in poor control of false discovery rate. 
 
 `succotashr` fits this model under a two-step empirical Bayesian approach. It places a non-parametric prior on $\beta$ and jointly estimates $\beta$ and $Z\alpha$. The main function is `succotash`.
+
+## Installation
+To install, run the following code in `R`:
+```{r, eval = FALSE}
+install.packages(c("devtools", "SQUAREM"))
+devtools::install_github("stephens999/ashr")
+devtools::install_github("dcgerard/succotashr")
+```
+
+The following packages are suggested:
+```{r, eval = FALSE}
+install.packages("cate")
+devtools::install_github("NKweiwang/flash")
+source("https://bioconductor.org/biocLite.R")
+biocLite("limma")
+```

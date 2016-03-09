@@ -453,8 +453,9 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 10, print_st
 #'   MLE implemented in \code{\link{factor_mle}} (\code{"reg_mle"}), two methods
 #'   fromthe package \code{cate}: the quasi-MLE (\code{"quasi_mle"}) from
 #'   \href{http://projecteuclid.org/euclid.aos/1334581749}{Bai and Li (2012)},
-#'   just naive PCA (\code{"pca"}), FLASH (\code{"flash"}), or homoscedastic PCA
-#'   (\code{"homoPCA"}).
+#'   just naive PCA (\code{"pca"}), FLASH (\code{"flash"}), homoscedastic PCA
+#'   (\code{"homoPCA"}), PCA followed by shrinking the variances using limma
+#'   (\code{"pca_shrinkvar"}), or moderated factor analysis (\code{"mod_fa"}).
 #' @param lambda_type See \code{\link{succotash_given_alpha}} for options on the
 #'   regularization parameter of the mixing proportions.
 #' @param mix_type Should the prior be a mixture of normals \code{mix_type =
@@ -467,8 +468,6 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 10, print_st
 #'   of \eqn{\pi}. If \code{NULL}, then one of three options are implemented in
 #'   calculating \code{pi_init} based on the value of \code{pi_init_type}. Only
 #'   available in normal mixtures for now.
-#' @param flash_sig_type A string. What variance model should FLASH use? Should
-#'   be either "constant" or "hetero_col".
 #'
 #' @return See \code{\link{succotash_given_alpha}} for details of output.
 #'
@@ -477,11 +476,11 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 10, print_st
 #' @seealso \code{\link{succotash_given_alpha}}, \code{\link{factor_mle}},
 #'   \code{\link{succotash_summaries}}.
 succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 10, z_start_sd = 1,
-                      fa_method = c("reg_mle", "quasi_mle", "pca", "flash", "homoPCA"), lambda_type = "zero_conc",
-                      mix_type = 'normal', lambda0 = 10, tau_seq = NULL, em_pi_init = NULL, flash_sig_type = "constant") {
+                      fa_method = c("reg_mle", "quasi_mle", "pca", "flash", "homoPCA", "pca_shrinkvar", "mod_fa"), lambda_type = "zero_conc",
+                      mix_type = 'normal', lambda0 = 10, tau_seq = NULL, em_pi_init = NULL) {
     ncol_x <- ncol(X)
 
-    fa_method <- match.arg(fa_method, c("reg_mle", "quasi_mle", "pca", "flash", "homoPCA"))
+    fa_method <- match.arg(fa_method, c("reg_mle", "quasi_mle", "pca", "flash", "homoPCA", "pca_shrinkvar", "mod_fa"))
 
     qr_x <- qr(X)
     ## multiply by sign so that it matches with beta_hat_ols
@@ -509,27 +508,15 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 10, z_start_sd = 1,
         Y_current <- Y_tilde[2:n, ]
         L_mat <- matrix(NA, nrow = nrow(Y_current), ncol = k)
         F_mat <- matrix(NA, nrow = ncol(Y_current), ncol = k)
-        if (flash_sig_type == "constant") {
-          var_vec <- rep(NA, length = k)
-          for(conf_index in 1:k) {
+        var_vec <- rep(NA, length = k)
+        for(conf_index in 1:k) {
             flash_out <- flash::flash(Y_current)
             Y_current <- Y_current - flash_out$l %*% t(flash_out$f)
             L_mat[, conf_index] <- flash_out$l
             F_mat[, conf_index] <- flash_out$f
             var_vec[conf_index] <- flash_out$sigmae2
-          }
-          sig_diag <- rep(mean(var_vec), length = nrow(F_mat))
-        } else if (flash_sig_type == "hetero_col") {
-            sig_diag <- rep(0, length = ncol(Y_current))
-            for(conf_index in 1:k) {
-              flash_out <- flash::flash_hd(Y_current, partype = "hetero_col")
-              Y_current <- Y_current - flash_out$l %*% t(flash_out$f)
-              L_mat[, conf_index] <- flash_out$l
-              F_mat[, conf_index] <- flash_out$f
-              sig_diag <- sig_diag + flash_out$sigmae2[1,]
-            }
-            sig_diag <- sig_diag / k
         }
+        sig_diag <- rep(mean(var_vec), length = nrow(F_mat))
         alpha <- F_mat
     } else if (fa_method == "homoPCA") {
       Y_current <- Y_tilde[2:n, ]
@@ -537,6 +524,16 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 10, z_start_sd = 1,
       alpha <- svdY$v[, 1:k] %*% diag(svdY$d[1:k], k, k) / sqrt(nrow(Y_current))
       Ztemp <- sqrt(nrow(Y_current)) * svdY$u[, 1:k]
       sig_diag <- rep(sum((Y_current - Ztemp %*% t(alpha)) ^ 2) / (max(dim(Y_current)) * (min(dim(Y_current)) - k)), ncol(Y_current))
+    } else if (fa_method == "pca_shrinkvar" & requireNamespace("limma", quietly = TRUE)) {
+        Y_current <- Y_tilde[2:n, ]
+        pca_shrinkvar_out <- pca_shrinkvar(Y_current, k, df = "minus_one")
+        alpha <- t(pca_shrinkvar_out$F)
+        sig_diag <- pca_shrinkvar_out$sigma2est
+    } else if (fa_method == "mod_fa") {
+        Y_current <- Y_tilde[2:n, ]
+        mod_fa_out <- mod_fa(Y_current, k)
+        alpha <- t(mod_fa_out$F)
+        sig_diag <- mod_fa_out$sigma2est
     }
 
 

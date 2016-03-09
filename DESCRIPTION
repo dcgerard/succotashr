@@ -16,7 +16,8 @@ Imports:
 Suggests:
     cate (>= 1.0.4),
     testthat,
-    flash
+    flash,
+    limma
 RoxygenNote: 5.0.1
 URL: https://github.com/dcgerard/succotashr
 BugReports: https://github.com/dcgerard/succotashr/issues

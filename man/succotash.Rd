@@ -6,9 +6,9 @@
 SHrinkage.}
 \usage{
 succotash(Y, X, k, sig_reg = 0.01, num_em_runs = 10, z_start_sd = 1,
-  fa_method = c("reg_mle", "quasi_mle", "pca", "flash", "homoPCA"),
-  lambda_type = "zero_conc", mix_type = "normal", lambda0 = 10,
-  tau_seq = NULL, em_pi_init = NULL, flash_sig_type = "constant")
+  fa_method = c("reg_mle", "quasi_mle", "pca", "flash", "homoPCA",
+  "pca_shrinkvar", "mod_fa"), lambda_type = "zero_conc",
+  mix_type = "normal", lambda0 = 10, tau_seq = NULL, em_pi_init = NULL)
 }
 \arguments{
 \item{Y}{An \code{n} by \code{p} matrix of response variables.}
@@ -34,8 +34,9 @@ deviation \code{z_start_sd}.}
 MLE implemented in \code{\link{factor_mle}} (\code{"reg_mle"}), two methods
 fromthe package \code{cate}: the quasi-MLE (\code{"quasi_mle"}) from
 \href{http://projecteuclid.org/euclid.aos/1334581749}{Bai and Li (2012)},
-just naive PCA (\code{"pca"}), FLASH (\code{"flash"}), or homoscedastic PCA
-(\code{"homoPCA"}).}
+just naive PCA (\code{"pca"}), FLASH (\code{"flash"}), homoscedastic PCA
+(\code{"homoPCA"}), PCA followed by shrinking the variances using limma
+(\code{"pca_shrinkvar"}), or moderated factor analysis (\code{"mod_fa"}).}
 
 \item{lambda_type}{See \code{\link{succotash_given_alpha}} for options on the
 regularization parameter of the mixing proportions.}
@@ -53,9 +54,6 @@ the amount to penalize \code{pi0}.}
 of \eqn{\pi}. If \code{NULL}, then one of three options are implemented in
 calculating \code{pi_init} based on the value of \code{pi_init_type}. Only
 available in normal mixtures for now.}
-
-\item{flash_sig_type}{A string. What variance model should FLASH use? Should
-be either "constant" or "hetero_col".}
 }
 \value{
 See \code{\link{succotash_given_alpha}} for details of output.
