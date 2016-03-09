@@ -450,10 +450,11 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 10, print_st
 #'   \code{Z} is initiated with independent mean zero normals with standard
 #'   deviation \code{z_start_sd}.
 #' @param fa_method Which factor analysis method should we use? The regularized
-#'   MLE implemented in \code{\link{factor_mle}} (\code{"reg_mle"}), or two
-#'   methods fromthe package \code{cate}: the quasi-MLE (\code{"quasi_mle"})
-#'   from \href{http://projecteuclid.org/euclid.aos/1334581749}{Bai and Li
-#'   (2012)} or just naive PCA (\code{"pca"}). See
+#'   MLE implemented in \code{\link{factor_mle}} (\code{"reg_mle"}), two methods
+#'   fromthe package \code{cate}: the quasi-MLE (\code{"quasi_mle"}) from
+#'   \href{http://projecteuclid.org/euclid.aos/1334581749}{Bai and Li (2012)},
+#'   just naive PCA (\code{"pca"}), FLASH (\code{"flash"}), or homoscedastic PCA
+#'   (\code{"homoPCA"}).
 #' @param lambda_type See \code{\link{succotash_given_alpha}} for options on the
 #'   regularization parameter of the mixing proportions.
 #' @param mix_type Should the prior be a mixture of normals \code{mix_type =
@@ -466,6 +467,8 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 10, print_st
 #'   of \eqn{\pi}. If \code{NULL}, then one of three options are implemented in
 #'   calculating \code{pi_init} based on the value of \code{pi_init_type}. Only
 #'   available in normal mixtures for now.
+#' @param flash_sig_type A string. What variance model should FLASH use? Should
+#'   be either "constant" or "hetero_col".
 #'
 #' @return See \code{\link{succotash_given_alpha}} for details of output.
 #'
@@ -474,11 +477,11 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 10, print_st
 #' @seealso \code{\link{succotash_given_alpha}}, \code{\link{factor_mle}},
 #'   \code{\link{succotash_summaries}}.
 succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 10, z_start_sd = 1,
-                      fa_method = c("reg_mle", "quasi_mle", "pca"), lambda_type = "zero_conc",
-                      mix_type = 'normal', lambda0 = 10, tau_seq = NULL, em_pi_init = NULL) {
+                      fa_method = c("reg_mle", "quasi_mle", "pca", "flash", "homoPCA"), lambda_type = "zero_conc",
+                      mix_type = 'normal', lambda0 = 10, tau_seq = NULL, em_pi_init = NULL, flash_sig_type = "constant") {
     ncol_x <- ncol(X)
 
-    fa_method <- match.arg(fa_method, c("reg_mle", "quasi_mle", "pca"))
+    fa_method <- match.arg(fa_method, c("reg_mle", "quasi_mle", "pca", "flash", "homoPCA"))
 
     qr_x <- qr(X)
     ## multiply by sign so that it matches with beta_hat_ols
@@ -502,6 +505,38 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 10, z_start_sd = 1,
         pca_out <- cate::fa.pc(Y = Y_tilde[2:n, ], r = k)
         alpha <- pca_out$Gamma
         sig_diag <- pca_out$Sigma
+    } else if (fa_method == "flash" & requireNamespace("flash", quietly = TRUE)) {
+        Y_current <- Y_tilde[2:n, ]
+        L_mat <- matrix(NA, nrow = nrow(Y_current), ncol = k)
+        F_mat <- matrix(NA, nrow = ncol(Y_current), ncol = k)
+        if (flash_sig_type == "constant") {
+          var_vec <- rep(NA, length = k)
+          for(conf_index in 1:k) {
+            flash_out <- flash::flash(Y_current)
+            Y_current <- Y_current - flash_out$l %*% t(flash_out$f)
+            L_mat[, conf_index] <- flash_out$l
+            F_mat[, conf_index] <- flash_out$f
+            var_vec[conf_index] <- flash_out$sigmae2
+          }
+          sig_diag <- rep(mean(var_vec), length = nrow(F_mat))
+        } else if (flash_sig_type == "hetero_col") {
+            sig_diag <- rep(0, length = ncol(Y_current))
+            for(conf_index in 1:k) {
+              flash_out <- flash::flash_hd(Y_current, partype = "hetero_col")
+              Y_current <- Y_current - flash_out$l %*% t(flash_out$f)
+              L_mat[, conf_index] <- flash_out$l
+              F_mat[, conf_index] <- flash_out$f
+              sig_diag <- sig_diag + flash_out$sigmae2[1,]
+            }
+            sig_diag <- sig_diag / k
+        }
+        alpha <- F_mat
+    } else if (fa_method == "homoPCA") {
+      Y_current <- Y_tilde[2:n, ]
+      svdY <- svd(Y_current)
+      alpha <- svdY$v[, 1:k] %*% diag(svdY$d[1:k], k, k) / sqrt(nrow(Y_current))
+      Ztemp <- sqrt(nrow(Y_current)) * svdY$u[, 1:k]
+      sig_diag <- rep(sum((Y_current - Ztemp %*% t(alpha)) ^ 2) / (max(dim(Y_current)) * (min(dim(Y_current)) - k)), ncol(Y_current))
     }
 
 
