@@ -4,7 +4,7 @@
 \alias{t_uniform_succ_given_alpha}
 \title{Second step of SUCCOTASH with uniform mixture and a t-likelihood.}
 \usage{
-t_uniform_succ_given_alpha(Y, alpha, sig_diag, nu, num_em_runs = 10,
+t_uniform_succ_given_alpha(Y, alpha, sig_diag, nu, num_em_runs = 2,
   a_seq = NULL, b_seq = NULL, lambda = NULL, em_itermax = 200,
   em_tol = 10^-6, pi_init = NULL, Z_init = NULL, em_z_start_sd = 1,
   pi_init_type = "zero_conc", lambda_type = "zero_conc",

@@ -42,7 +42,7 @@
 #'     \code{\link{t_succotash_unif_fixed}}
 #'
 #' @export
-t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 10,
+t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 2,
                                        a_seq = NULL, b_seq = NULL, lambda = NULL,
                                        em_itermax = 200, em_tol = 10 ^ -6, pi_init = NULL,
                                        Z_init = NULL,
@@ -85,8 +85,88 @@ t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 10,
             b_seq <- c(b_seq, b_current)
         }
     }
+
+    M <- length(a_seq) + length(b_seq) + 1
+
+    if (is.null(lambda)) {
+        if (lambda_type == 'unif') {
+            lambda <- rep(1, M)
+        } else if (lambda_type == 'zero_conc') {
+            lambda <- c(rep(1, length = length(a_seq)), 10, rep(1, length = length(b_seq)))
+        }
+    }
+
+    em_out <- t_unif_em(a_seq = a_seq, b_seq = b_seq, Y = Y,
+                            alpha = alpha, sig_diag = sig_diag,
+                            nu = nu, pi_init = pi_init,
+                            Z_init = Z_init,
+                            pi_init_type = "zero_conc",
+                            lambda = lambda,
+                            print_progress = print_progress,
+                            true_Z = true_Z, em_tol = em_tol,
+                            em_itermax = em_itermax,
+                            print_ziter = print_ziter,
+                            em_z_start_sd = em_z_start_sd)
+    pi_current <- em_out$pi_new
+    Z_current <- em_out$Z_new
+    llike_current <- em_out$llike
+
+    if (num_em_runs > 1) {
+        for (em_index in 2:num_em_runs) {
+            em_out <- t_unif_em(a_seq = a_seq, b_seq = b_seq, Y = Y,
+                                alpha = alpha, sig_diag = sig_diag,
+                                nu = nu, pi_init = pi_init,
+                                Z_init = Z_init,
+                                pi_init_type = "random",
+                                lambda = lambda,
+                                print_progress = print_progress,
+                                true_Z = true_Z, em_tol = em_tol,
+                                em_itermax = em_itermax,
+                                print_ziter = print_ziter,
+                                em_z_start_sd = em_z_start_sd)
+            pi_new <- em_out$pi_new
+            Z_new <- em_out$Z_new
+            llike_new <- em_out$llike
+            
+            if(llike_new > llike_current) {
+                pi_current <- pi_new
+                Z_current <- Z_new
+                llike_current <- llike_new
+            }
+        }
+    }
+
+    mix_fit <- ashr::unimix(pi = pi_current, a = c(a_seq, rep(0, length(b_seq) + 1)),
+                            b = c(rep(0, length(a_seq) + 1), b_seq))
     
+    az <- alpha %*% matrix(Z_current, ncol = 1)
+    
+    betahat <- ashr::postmean(m = mix_fit, betahat = c(Y - az), sebetahat = sqrt(sig_diag),
+                              v = rep(nu, p))
+    
+    probs <- ashr::comppostprob(m = mix_fit, x = c(Y - az), s = sqrt(sig_diag), v = rep(nu, p))
+    lfdr <- probs[length(a_seq) + 1,]
+    qval <- ashr::qval.from.lfdr(lfdr)
+    
+
+    return(list(Z = Z_current, pi_vals = pi_current, a_seq = a_seq, b_seq = b_seq,
+                lfdr = lfdr, betahat = betahat, qval = qval))
+}
+
+#' EM algorithm for uniform mixtures and t-likelihood
+#'
+#'
+#'
+#' @inheritParams t_uniform_succ_given_alpha 
+#'
+#'
+t_unif_em <- function(a_seq, b_seq, Y, alpha, sig_diag, nu, pi_init, Z_init, pi_init_type, lambda,
+                      print_progress, print_ziter, em_z_start_sd, true_Z = NULL, em_tol = 10^-6, em_itermax = 200) {
+
     M <- length(a_seq) + length(b_seq) + 1 ## plus 1 for pointmass at 0
+
+    p <- nrow(Y)
+    k <- ncol(alpha)
     
     if (is.null(pi_init) | length(pi_init) != M) {
         if (pi_init_type == "random") {
@@ -99,8 +179,8 @@ t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 10,
             pi_init[1:M] <- 1 / M
         } else if (pi_init_type == "zero_conc") {
             ## most mass at 0
-            pi_init[2:M] <- min(1 / p, 1 / M)
-            pi_init[1] <- 1 - sum(pi_init[2:M])
+            pi_init[1:M] <- min(1 / p, 1 / M)
+            pi_init[length(a_seq) + 1] <- 1 - sum(pi_init[2:M])
         } else {
             warning("pi_init_type is bad")
         }
@@ -112,18 +192,7 @@ t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 10,
         Z_init <- matrix(rnorm(k, sd = em_z_start_sd), nrow = k)
     }
     
-    if (is.null(lambda)) {
-        if (lambda_type == 'unif') {
-            lambda <- rep(1, M)
-        } else if (lambda_type == 'zero_conc') {
-            lambda <- c(rep(1, length = length(a_seq)), 10, rep(1, length = length(b_seq)))
-        }
-    }
-    
     pi_Z <- c(pi_init, Z_init)
-    
-    
-        
         
     pi_new <- pi_Z[1:M]
     plot(c(a_seq, 0, b_seq), pi_new, type = "h", ylab = expression(pi), xlab = "a or b",
@@ -178,22 +247,7 @@ t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 10,
         }
         em_index <- em_index + 1
     }
-    
-    mix_fit <- ashr::unimix(pi = pi_new, a = c(a_seq, rep(0, length(b_seq) + 1)),
-                            b = c(rep(0, length(a_seq) + 1), b_seq))
-    
-    az <- alpha %*% matrix(Z_new, ncol = 1)
-    
-    betahat <- ashr::postmean(m = mix_fit, betahat = c(Y - az), sebetahat = sqrt(sig_diag),
-                              v = rep(nu, p))
-    
-    probs <- ashr::comppostprob(m = mix_fit, x = c(Y - az), s = sqrt(sig_diag), v = rep(nu, p))
-    lfdr <- probs[length(a_seq) + 1,]
-    qval <- ashr::qval.from.lfdr(lfdr)
-    
-
-    return(list(Z = Z_new, pi_vals = pi_new, a_seq = a_seq, b_seq = b_seq,
-                lfdr = lfdr, betahat = betahat, qval = qval))
+    return(list(Z_new = Z_new, pi_new = pi_new, llike = llike_current))
 }
 
 

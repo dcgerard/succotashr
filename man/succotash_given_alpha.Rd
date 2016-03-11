@@ -5,11 +5,11 @@
 \title{Maximize the SUCCOTASH log-likelihood and return posterior
 summaries.}
 \usage{
-succotash_given_alpha(Y, alpha, sig_diag, num_em_runs = 10,
+succotash_given_alpha(Y, alpha, sig_diag, num_em_runs = 2,
   print_steps = FALSE, tau_seq = NULL, em_pi_init = NULL, lambda = NULL,
   em_Z_init = NULL, em_itermax = 1500, em_tol = 10^-6,
-  em_z_start_sd = 1, em_pi_init_type = "random",
-  lambda_type = "zero_conc", lambda0 = 10, plot_new_ests = FALSE)
+  em_z_start_sd = 1, lambda_type = "zero_conc", lambda0 = 10,
+  plot_new_ests = FALSE)
 }
 \arguments{
 \item{Y}{A matrix of dimension \code{p} by \code{1}. These are the
@@ -55,16 +55,6 @@ log-likelihoods from 1.}
 \code{NULL}, then the starting values for \eqn{Z} are drawn
 from a mean zero normal with standard devation
 \code{z_start_sd}.}
-
-\item{em_pi_init_type}{How should we choose the initial values of
-\eqn{\pi}.  Possible values of \code{"random"},
-\code{"uniform"}, and \code{"zero_conc"}. If \code{"random"}
-then the initial values of \eqn{\pi} are drawn uniformly over
-the probability simplex. If \code{"uniform"}, then each element
-of \code{pi_init} is given mass \code{1 / M}. If
-\code{"zero_conc"} then the last \code{M - 1} elements of
-\code{pi_init} are given mass \code{1 / p} and
-\code{pi_init[1]} is given mass \code{1 - sum(pi_init[2:M])}.}
 
 \item{lambda_type}{If \code{lambda} is \code{NULL}, then how should
 we choose the regularization parameters. Two options are

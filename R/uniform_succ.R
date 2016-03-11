@@ -308,7 +308,7 @@ succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag)
 #'
 #' @export
 uniform_succ_given_alpha <-
-  function(Y, alpha, sig_diag, num_em_runs = 10,
+  function(Y, alpha, sig_diag, num_em_runs = 2,
            a_seq = NULL, b_seq = NULL, lambda = NULL,
            em_itermax = 200, em_tol = 10 ^ -6, pi_init = NULL, Z_init = NULL,
            em_z_start_sd = 1, pi_init_type = "random",
@@ -456,7 +456,7 @@ uniform_succ_em <- function(pi_init, Z_init, a_seq, b_seq, lambda, alpha, Y, sig
       } else if (pi_init_type == "zero_conc") {
         ## most mass at 0
         pi_init[1:M] <- min(1 / p, 1 / M)
-        pi_init[length(b_seq) + 1] <- 1 - sum(pi_init[2:M])
+        pi_init[length(a_seq) + 1] <- 1 - sum(pi_init[2:M])
       } else {
           stop("pi_init_type is bad")
       }

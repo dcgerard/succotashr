@@ -5,7 +5,7 @@
 \title{Surrogate and Confounder Correction Occuring Together with Adaptive
 SHrinkage.}
 \usage{
-succotash(Y, X, k, sig_reg = 0.01, num_em_runs = 10, z_start_sd = 1,
+succotash(Y, X, k, sig_reg = 0.01, num_em_runs = 2, z_start_sd = 1,
   fa_method = c("reg_mle", "quasi_mle", "pca", "flash", "homoPCA",
   "pca_shrinkvar", "mod_fa"), lambda_type = "zero_conc",
   mix_type = "normal", likelihood = c("normal", "t"), lambda0 = 10,

@@ -300,15 +300,6 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
 #'     \code{NULL}, then the starting values for \eqn{Z} are drawn
 #'     from a mean zero normal with standard devation
 #'     \code{z_start_sd}.
-#' @param em_pi_init_type How should we choose the initial values of
-#'     \eqn{\pi}.  Possible values of \code{"random"},
-#'     \code{"uniform"}, and \code{"zero_conc"}. If \code{"random"}
-#'     then the initial values of \eqn{\pi} are drawn uniformly over
-#'     the probability simplex. If \code{"uniform"}, then each element
-#'     of \code{pi_init} is given mass \code{1 / M}. If
-#'     \code{"zero_conc"} then the last \code{M - 1} elements of
-#'     \code{pi_init} are given mass \code{1 / p} and
-#'     \code{pi_init[1]} is given mass \code{1 - sum(pi_init[2:M])}.
 #' @param lambda_type If \code{lambda} is \code{NULL}, then how should
 #'     we choose the regularization parameters. Two options are
 #'     available. If \code{lambda_type} is \code{"zero_conc"}, then
@@ -343,12 +334,22 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
 #'
 #' @seealso \code{\link{succotash_em}},
 #'     \code{\link{succotash_summaries}}.
-succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 10, print_steps = FALSE,
+succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_steps = FALSE,
                                   tau_seq = NULL, em_pi_init = NULL, lambda = NULL,
                                   em_Z_init = NULL, em_itermax = 1500, em_tol = 10 ^ -6,
-                                  em_z_start_sd = 1, em_pi_init_type = "random",
+                                  em_z_start_sd = 1,
                                   lambda_type = "zero_conc", lambda0 = 10,
                                   plot_new_ests = FALSE) {
+
+    ## @param em_pi_init_type How should we choose the initial values of
+    ## \eqn{\pi}.  Possible values of \code{"random"},
+    ## \code{"uniform"}, and \code{"zero_conc"}. If \code{"random"}
+    ## then the initial values of \eqn{\pi} are drawn uniformly over
+    ## the probability simplex. If \code{"uniform"}, then each element
+    ## of \code{pi_init} is given mass \code{1 / M}. If
+    ## \code{"zero_conc"} then the last \code{M - 1} elements of
+    ## \code{pi_init} are given mass \code{1 / p} and
+    ## \code{pi_init[1]} is given mass \code{1 - sum(pi_init[2:M])}.
 
     em_out <- succotash_em(Y = Y, alpha = alpha, sig_diag = sig_diag,
                            tau_seq = tau_seq, pi_init = em_pi_init,
@@ -359,35 +360,38 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 10, print_st
                            lambda_type = lambda_type,
                            lambda0 = lambda0,
                            plot_new_ests = plot_new_ests)
-    for (index in 1:num_em_runs) {
-        em_new <- succotash_em(Y = Y, alpha = alpha,
-                               sig_diag = sig_diag, tau_seq = tau_seq,
-                               pi_init = em_pi_init, lambda = lambda,
-                               Z_init = em_Z_init,
-                               itermax = em_itermax, tol = em_tol,
-                               z_start_sd = em_z_start_sd,
-                               pi_init_type = em_pi_init_type,
-                               lambda_type = lambda_type,
-                               lambda0 = lambda0,
-                               plot_new_ests = plot_new_ests)
-        pi_diff <- sum(abs(em_new$pi_vals - em_out$pi_vals))
-        z_diff <- sum(abs(em_new$Z - em_out$Z))
-        if (em_out$llike < em_new$llike) {
-            em_out <- em_new
-        }
-        if (print_steps) {
-            cat("   Rep:", index, "\n")
-            cat(" lbest:", em_out$llike, "\n")
-            cat(" llike:", em_new$llike, "\n")
-            cat("pidiff:", pi_diff, "\n")
-            cat(" zdiff:", z_diff, "\n\n")
+
+    if(num_em_runs > 1) {
+        for (index in 2:num_em_runs) {
+            em_new <- succotash_em(Y = Y, alpha = alpha,
+                                   sig_diag = sig_diag, tau_seq = tau_seq,
+                                   pi_init = em_pi_init, lambda = lambda,
+                                   Z_init = em_Z_init,
+                                   itermax = em_itermax, tol = em_tol,
+                                   z_start_sd = em_z_start_sd,
+                                   pi_init_type = "random",
+                                   lambda_type = lambda_type,
+                                   lambda0 = lambda0,
+                                   plot_new_ests = plot_new_ests)
+            pi_diff <- sum(abs(em_new$pi_vals - em_out$pi_vals))
+            z_diff <- sum(abs(em_new$Z - em_out$Z))
+            if (em_out$llike < em_new$llike) {
+                em_out <- em_new
+            }
+            if (print_steps) {
+                cat("   Rep:", index, "\n")
+                cat(" lbest:", em_out$llike, "\n")
+                cat(" llike:", em_new$llike, "\n")
+                cat("pidiff:", pi_diff, "\n")
+                cat(" zdiff:", z_diff, "\n\n")
+            }
         }
     }
-
+    
     sum_out <- succotash_summaries(Y = Y, Z = em_out$Z, pi_vals = em_out$pi_vals,
                                    alpha = alpha, sig_diag = sig_diag, tau_seq = em_out$tau_seq)
     q_vals <- lfdr_to_q(lfdr = sum_out$lfdr)
-
+    
     return(list(Z = em_out$Z, pi_vals = em_out$pi_vals, tau_seq = em_out$tau_seq,
                 lfdr = sum_out$lfdr, lfsr = sum_out$lfsr, qvals = q_vals,
                 betahat = sum_out$beta_hat))
@@ -476,7 +480,7 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 10, print_st
 #'
 #' @seealso \code{\link{succotash_given_alpha}}, \code{\link{factor_mle}},
 #'   \code{\link{succotash_summaries}}.
-succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 10,
+succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                       z_start_sd = 1,
                       fa_method = c("reg_mle", "quasi_mle", "pca", "flash",
                                     "homoPCA", "pca_shrinkvar", "mod_fa"),
