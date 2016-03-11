@@ -352,6 +352,98 @@ uniform_succ_given_alpha <-
 
     M <- length(a_seq) + length(b_seq) + 1 ## plus 1 for pointmass at 0
 
+
+
+    if (is.null(lambda)) {
+      if (lambda_type == 'unif') {
+        lambda <- rep(1, M)
+      } else if (lambda_type == 'zero_conc') {
+        lambda <- c(rep(1, length = length(a_seq)), 10, rep(1, length = length(b_seq)))
+      }
+    }
+
+
+    ## zero conc for first EM algorithm.
+    em_out <- uniform_succ_em(pi_init = pi_init, Z_init = Z_init,
+                              a_seq = a_seq, b_seq = b_seq,
+                              lambda = lambda, alpha = alpha, Y = Y,
+                              sig_diag = sig_diag,
+                              print_ziter = print_ziter,
+                              print_progress = print_progress,
+                              em_itermax = em_itermax,
+                              em_tol = em_tol,
+                              pi_init_type = "zero_conc",
+                              em_z_start_sd = em_z_start_sd,
+                              true_Z = true_Z)
+    pi_current <- em_out$pi_new
+    Z_current <- em_out$Z_new
+    llike_current <- em_out$llike
+
+    ## Random init for other EM algorithms.
+    if(num_em_runs > 1) {
+        for(em_index in 2:num_em_runs) {
+            em_out <- uniform_succ_em(pi_init = pi_init, Z_init = Z_init,
+                                      a_seq = a_seq, b_seq = b_seq,
+                                      lambda = lambda, alpha = alpha,
+                                      Y = Y, sig_diag = sig_diag,
+                                      print_ziter = print_ziter,
+                                      print_progress = print_progress,
+                                      em_itermax = em_itermax,
+                                      em_tol = em_tol,
+                                      pi_init_type = "random",
+                                      em_z_start_sd = em_z_start_sd,
+                                      true_Z = true_Z)
+            pi_new <- em_out$pi_new
+            Z_new <- em_out$Z_new
+            llike_new <- em_out$llike
+
+            if(llike_new > llike_current) {
+                pi_current <- pi_new
+                Z_current <- Z_new
+                llike_current <- llike_new
+            }
+        }
+    }
+
+    mix_fit <- ashr::unimix(pi = pi_current, a = c(a_seq, rep(0, length(b_seq) + 1)),
+                            b = c(rep(0, length(a_seq) + 1), b_seq))
+
+    az <- alpha %*% matrix(Z_current, ncol = 1)
+
+    betahat <- ashr::postmean(m = mix_fit, betahat = c(Y - az), sebetahat = sqrt(sig_diag),
+                              v = rep(1000, p))
+
+    probs <- ashr::comppostprob(m = mix_fit, x = c(Y - az), s = sqrt(sig_diag), v = rep(1000, p))
+    lfdr <- probs[length(a_seq) + 1,]
+    qval <- ashr::qval.from.lfdr(lfdr)
+
+    #        sq_out <-
+    #            SQUAREM::fpiter(par = pi_Z, lambda = lambda, alpha = alpha,
+    #                            Y = Y, a_seq = a_seq, b_seq = b_seq,
+    #                            sig_diag = sig_diag,
+    #                            fixptfn = succotash_unif_fixed)
+
+    return(list(Z = Z_current, pi_vals = pi_current, a_seq = a_seq, b_seq = b_seq,
+                lfdr = lfdr, betahat = betahat, qval = qval))
+  }
+
+#' EM algorithm for second step of SUCCOTASH
+#'
+#'
+#'
+#' @inheritParams uniform_succ_given_alpha
+#'
+#'
+uniform_succ_em <- function(pi_init, Z_init, a_seq, b_seq, lambda, alpha, Y, sig_diag,
+                            print_ziter, print_progress, em_z_start_sd, em_itermax = 200,
+                            em_tol = 10^-6,
+                            pi_init_type = "random", true_Z = NULL) {
+
+    M <- length(a_seq) + length(b_seq) + 1
+
+    p <- nrow(Y)
+    k <- ncol(alpha)
+
     if (is.null(pi_init) | length(pi_init) != M) {
       if (pi_init_type == "random") {
         ## random start points
@@ -363,10 +455,10 @@ uniform_succ_given_alpha <-
         pi_init[1:M] <- 1 / M
       } else if (pi_init_type == "zero_conc") {
         ## most mass at 0
-        pi_init[2:M] <- min(1 / p, 1 / M)
-        pi_init[1] <- 1 - sum(pi_init[2:M])
+        pi_init[1:M] <- min(1 / p, 1 / M)
+        pi_init[length(b_seq) + 1] <- 1 - sum(pi_init[2:M])
       } else {
-        warning("pi_init_type is bad")
+          stop("pi_init_type is bad")
       }
     }
 
@@ -376,18 +468,8 @@ uniform_succ_given_alpha <-
       Z_init <- matrix(rnorm(k, sd = em_z_start_sd), nrow = k)
     }
 
-    if (is.null(lambda)) {
-      if (lambda_type == 'unif') {
-        lambda <- rep(1, M)
-      } else if (lambda_type == 'zero_conc') {
-        lambda <- c(rep(1, length = length(a_seq)), 10, rep(1, length = length(b_seq)))
-      }
-    }
 
     pi_Z <- c(pi_init, Z_init)
-
-
-
 
     pi_new <- pi_Z[1:M]
     plot(c(a_seq, 0, b_seq), pi_new, type = "h", ylab = expression(pi), xlab = "a or b",
@@ -437,24 +519,21 @@ uniform_succ_given_alpha <-
       em_index <- em_index + 1
     }
 
-    mix_fit <- ashr::unimix(pi = pi_new, a = c(a_seq, rep(0, length(b_seq) + 1)),
-                            b = c(rep(0, length(a_seq) + 1), b_seq))
+    return(list(pi_new = pi_new, Z_new = Z_new, llike = llike_current))
+}
 
-    az <- alpha %*% matrix(Z_new, ncol = 1)
 
-    betahat <- ashr::postmean(m = mix_fit, betahat = c(Y - az), sebetahat = sqrt(sig_diag),
-                              v = rep(1000, p))
+## p <- 1000
+## k <- 10
 
-    probs <- ashr::comppostprob(m = mix_fit, x = c(Y - az), s = sqrt(sig_diag), v = rep(1000, p))
-    lfdr <- probs[length(a_seq) + 1,]
-    qval <- ashr::qval.from.lfdr(lfdr)
+## Z <- matrix(rnorm(k), ncol = 1)
+## beta <- c(matrix(rnorm(p / 2, mean = 1), ncol = 1), rep(0, p/2))
+## alpha <- matrix(rnorm(p * k), nrow = p)
+## sig_diag <- rep(1, length = p)
+## df <- 2
+## Y <- matrix(rt(p, df = df) + beta + alpha %*% Z, ncol = 1)
 
-    #        sq_out <-
-    #            SQUAREM::fpiter(par = pi_Z, lambda = lambda, alpha = alpha,
-    #                            Y = Y, a_seq = a_seq, b_seq = b_seq,
-    #                            sig_diag = sig_diag,
-    #                            fixptfn = succotash_unif_fixed)
-
-    return(list(Z = Z_new, pi_vals = pi_new, a_seq = a_seq, b_seq = b_seq,
-                lfdr = lfdr, betahat = betahat, qval = qval))
-  }
+## em_tol = 10^-6
+## em_itermax = 1000
+## num_em_runs = 1
+## em_z_start_sd = 1

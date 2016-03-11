@@ -9,7 +9,7 @@ succotash_given_alpha(Y, alpha, sig_diag, num_em_runs = 10,
   print_steps = FALSE, tau_seq = NULL, em_pi_init = NULL, lambda = NULL,
   em_Z_init = NULL, em_itermax = 1500, em_tol = 10^-6,
   em_z_start_sd = 1, em_pi_init_type = "random",
-  lambda_type = "zero_conc", lambda0 = 10)
+  lambda_type = "zero_conc", lambda0 = 10, plot_new_ests = FALSE)
 }
 \arguments{
 \item{Y}{A matrix of dimension \code{p} by \code{1}. These are the
@@ -74,6 +74,9 @@ available. If \code{lambda_type} is \code{"zero_conc"}, then
 
 \item{lambda0}{If \code{lambda_type = "zero_conc"}, then
 \code{lambda0} is the amount to penalize \code{pi0}.}
+
+\item{plot_new_ests}{A logical. Should we plot the new estimates of
+pi?}
 }
 \value{
 \code{Z} A matrix  of dimension \code{k} by  \code{1}. The

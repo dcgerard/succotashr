@@ -5,23 +5,15 @@
 #'
 #' @param pi_Z A vector. The first \code{M} values are the current values of
 #'   \eqn{\pi}. The last \code{k} values are the current values of \eqn{Z}.
-#' @param lambda A vector. This is a length \code{M} vector with the
-#'   regularization parameters for the mixing proportions.
-#' @param alpha A matrix. This is of dimension \code{p} by \code{k} and are the
-#'   coefficients to the confounding variables.
-#' @param Y A matrix of dimension \code{p} by \code{1}. These are the observed
-#'   regression coefficients of the observed variables.
-#' @param tau_seq A vector of length \code{M} containing the standard deviations
-#'   (not variances) of the mixing distributions.
-#' @param sig_diag A vector of length \code{p} containing the variances of the
-#'   observations.
+#' @inheritParams succotash_em
+#' @inheritParams succotash_given_alpha
 #'
 #' @return \code{pi_new} A vector of length \code{M}. The update for the mixing
 #'   components.
 #'
 #'   \code{Z_new} A vector of length \code{k}. The update for the confounder
 #'   covariates.
-succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag) {
+succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag, plot_new_ests = FALSE) {
     M <- length(tau_seq)
     p <- nrow(Y)
     k <- length(pi_Z) - M
@@ -53,6 +45,10 @@ succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag) {
     }
     pi_new <- (T_sum + lambda - 1) / (p - M + sum(lambda))
 
+    if(plot_new_ests) {
+        plot(tau_seq, pi_new, type = "h", xlab = expression(tau[k]), ylab = expression(pi[k]))
+    }
+
     return(c(pi_new, Z_new))
 }
 
@@ -73,12 +69,14 @@ succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag) {
 #'   (not variances) of the mixing distributions.
 #' @param sig_diag A vector of length \code{p} containing the variances of the
 #'   observations.
+#' @param plot_new_ests A logical. Needed to be here so can use SQUAREM package
+#'   without an error because being used in \code{succotash_fixed}.
 #'
 #' @export
 #'
 #' @return \code{llike_new} A numeric. The value of the SUCCOTASH
 #'   log-likelihood.
-succotash_llike <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag) {
+succotash_llike <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag, plot_new_ests = FALSE) {
     M <- length(tau_seq)
     p <- nrow(Y)
     k <- length(pi_Z) - M
@@ -115,21 +113,10 @@ succotash_llike <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag) {
 #' of local modes, so this function should be run at many starting
 #' locations.
 #'
-#' @param Y A matrix of dimension \code{p} by \code{1}. These are the
-#'     observed regression coefficients of the observed variables.
-#' @param alpha A matrix. This is of dimension \code{p} by \code{k}
-#'     and are the coefficients to the confounding variables.
-#' @param sig_diag A vector of length \code{p} containing the
-#'     variances of the observations.
-#' @param tau_seq A vector of length \code{M} containing the standard
-#'     deviations (not variances) of the mixing distributions.
 #' @param pi_init A vector of length \code{M} containing the starting
 #'     values of \eqn{\pi}. If \code{NULL}, then one of three options
 #'     are implemented in calculating \code{pi_init} based on the
 #'     value of \code{pi_init_type}.
-#' @param lambda A vector. This is a length \code{M} vector with the
-#'     regularization parameters for the mixing proportions. If
-#'     \code{NULL} then refer to \code{lambda_type}.
 #' @param Z_init A \code{k} by \code{1} matrix. These are the initial
 #'     values of the unobserved covariates. If its value is
 #'     \code{NULL}, then each element of \code{Z_init} will be drawn
@@ -154,13 +141,7 @@ succotash_llike <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag) {
 #'     \code{"zero_conc"} then the last \code{M - 1} elements of
 #'     \code{pi_init} are given mass \code{1 / p} and
 #'     \code{pi_init[1]} is given mass \code{1 - sum(pi_init[2:M])}.
-#' @param lambda_type If \code{lambda} is \code{NULL}, then how should
-#'     we choose the regularization parameters. Two options are
-#'     available. If \code{lambda_type} is \code{"zero_conc"}, then
-#'     \code{lambda[1] = 10} and \code{lambda[2:M] = 1}. If
-#'     \code{lambda_type} is \code{"ones"} then \code{lambda = 1}.
-#' @param lambda0 If \code{lambda_type = "zero_conc"}, then
-#'     \code{lambda0} is the amount to penalize \code{pi0}.
+#' @inheritParams succotash_given_alpha
 #'
 #' @export
 #'
@@ -178,7 +159,7 @@ succotash_llike <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag) {
 succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lambda = NULL,
                          Z_init = NULL, itermax = 1500, tol = 10 ^ -6, z_start_sd = 1,
                          print_note = FALSE, pi_init_type = "random", lambda_type = "zero_conc",
-                         lambda0 = 10) {
+                         lambda0 = 10, plot_new_ests = FALSE) {
     if (print_note) {
         cat("Working on EM.\n")
     }
@@ -246,9 +227,12 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
 
     pi_Z <- c(pi_init, Z_init)
 
-    sq_out <- SQUAREM::fpiter(par = pi_Z, lambda = lambda, alpha = alpha, Y = Y,
-                              tau_seq = tau_seq, sig_diag = sig_diag,
-                              fixptfn = succotash_fixed, objfn = succotash_llike,
+    sq_out <- SQUAREM::fpiter(par = pi_Z, lambda = lambda,
+                              alpha = alpha, Y = Y, tau_seq = tau_seq,
+                              sig_diag = sig_diag,
+                              plot_new_ests = plot_new_ests,
+                              fixptfn = succotash_fixed,
+                              objfn = succotash_llike,
                               control = list(maxiter = itermax, tol = tol))
                               ## from the SQUAREM package
 
@@ -332,6 +316,8 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
 #'     \code{lambda_type} is \code{"ones"} then \code{lambda = 1}.
 #' @param lambda0 If \code{lambda_type = "zero_conc"}, then
 #'     \code{lambda0} is the amount to penalize \code{pi0}.
+#' @param plot_new_ests A logical. Should we plot the new estimates of
+#'     pi?
 #'
 #' @return  \code{Z} A matrix  of dimension \code{k} by  \code{1}. The
 #'     estimates of the confounder covariates.
@@ -361,7 +347,8 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 10, print_st
                                   tau_seq = NULL, em_pi_init = NULL, lambda = NULL,
                                   em_Z_init = NULL, em_itermax = 1500, em_tol = 10 ^ -6,
                                   em_z_start_sd = 1, em_pi_init_type = "random",
-                                  lambda_type = "zero_conc", lambda0 = 10) {
+                                  lambda_type = "zero_conc", lambda0 = 10,
+                                  plot_new_ests = FALSE) {
 
     em_out <- succotash_em(Y = Y, alpha = alpha, sig_diag = sig_diag,
                            tau_seq = tau_seq, pi_init = em_pi_init,
@@ -370,13 +357,19 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 10, print_st
                            z_start_sd = em_z_start_sd,
                            pi_init_type = "zero_conc",
                            lambda_type = lambda_type,
-                           lambda0 = lambda0)
+                           lambda0 = lambda0,
+                           plot_new_ests = plot_new_ests)
     for (index in 1:num_em_runs) {
-        em_new <- succotash_em(Y = Y, alpha = alpha, sig_diag = sig_diag,
-                               tau_seq = tau_seq, pi_init = em_pi_init, lambda = lambda,
-                               Z_init = em_Z_init, itermax = em_itermax, tol = em_tol,
-                               z_start_sd = em_z_start_sd, pi_init_type = em_pi_init_type,
-                               lambda_type = lambda_type, lambda0 = lambda0)
+        em_new <- succotash_em(Y = Y, alpha = alpha,
+                               sig_diag = sig_diag, tau_seq = tau_seq,
+                               pi_init = em_pi_init, lambda = lambda,
+                               Z_init = em_Z_init,
+                               itermax = em_itermax, tol = em_tol,
+                               z_start_sd = em_z_start_sd,
+                               pi_init_type = em_pi_init_type,
+                               lambda_type = lambda_type,
+                               lambda0 = lambda0,
+                               plot_new_ests = plot_new_ests)
         pi_diff <- sum(abs(em_new$pi_vals - em_out$pi_vals))
         z_diff <- sum(abs(em_new$Z - em_out$Z))
         if (em_out$llike < em_new$llike) {
@@ -488,7 +481,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 10,
                       fa_method = c("reg_mle", "quasi_mle", "pca", "flash",
                                     "homoPCA", "pca_shrinkvar", "mod_fa"),
                       lambda_type = "zero_conc", mix_type = 'normal',
-                      likelihood = c("normal", "t") lambda0 = 10,
+                      likelihood = c("normal", "t"), lambda0 = 10,
                       tau_seq = NULL, em_pi_init = NULL) {
     ncol_x <- ncol(X)
 
@@ -588,7 +581,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 10,
                                        sig_diag = sig_diag_scaled, num_em_runs = num_em_runs,
                                        em_z_start_sd = z_start_sd, lambda_type = lambda_type)
     }
-    
+
     suc_out$Y1_scaled <- Y1_scaled  ## ols estimates
     suc_out$alpha_scaled <- alpha_scaled
     suc_out$sig_diag_scaled <- sig_diag_scaled

@@ -4,7 +4,8 @@
 \alias{succotash_llike}
 \title{The SUCCOTASH log-likelihood.}
 \usage{
-succotash_llike(pi_Z, lambda, alpha, Y, tau_seq, sig_diag)
+succotash_llike(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
+  plot_new_ests = FALSE)
 }
 \arguments{
 \item{pi_Z}{A vector. The first \code{M} values are the current values of
@@ -24,6 +25,9 @@ regression coefficients of the observed variables.}
 
 \item{sig_diag}{A vector of length \code{p} containing the variances of the
 observations.}
+
+\item{plot_new_ests}{A logical. Needed to be here so can use SQUAREM package
+without an error because being used in \code{succotash_fixed}.}
 }
 \value{
 \code{llike_new} A numeric. The value of the SUCCOTASH
