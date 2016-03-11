@@ -214,7 +214,8 @@ pca_shrinkvar <- function(Y, k, df = "rank_based") {
     mse_vec <- colSums(resid_vals ^ 2) / df
     ## Need to think harder about what I should divide by.
     ## In particular, shouldn't it depend on k? With larger k needing smaller df?
-
-    sig_diag <- limma::squeezeVar(var = mse_vec, df = df)$var.post
-    return(list(F = F, sigma2est = sig_diag))
+    sv_out <- limma::squeezeVar(var = mse_vec, df = df)
+    sig_diag <- sv_out$var.post
+    df <- sv_out$df.prior
+    return(list(F = F, sigma2est = sig_diag, df = df))
 }

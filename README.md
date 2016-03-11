@@ -13,7 +13,7 @@ Y = X\beta + Z\alpha + E,
 -   \(\alpha \in \mathbb{R}^{k \times p}\), the matrix of hidden coefficients for the hidden confounders, and
 -   \(E \sim N_{n \times p}(0, \Sigma \otimes I_n)\), the error matrix following a matrix normal with identity row covariance and diagonal column covariance \(\Sigma = diag(\sigma_1^2,\ldots,\sigma_p^2)\).
 
-Not accounting for the hidden covariates, \(Z\), can reduced power and result in poor control of false discovery rate.
+Not accounting for the hidden covariates, \(Z\), can reduce power and result in poor control of false discovery rate.
 
 `succotashr` fits this model under a two-step empirical Bayesian approach. It places a non-parametric prior on \(\beta\) and jointly estimates \(\beta\) and \(Z\alpha\). The main function is `succotash`.
 
