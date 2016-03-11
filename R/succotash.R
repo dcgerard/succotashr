@@ -451,9 +451,10 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
 #'     (\code{"reg_mle"}), two methods fromthe package \code{cate}:
 #'     the quasi-MLE (\code{"quasi_mle"}) from
 #'     \href{http://projecteuclid.org/euclid.aos/1334581749}{Bai and
-#'     Li (2012)}, just naive PCA (\code{"pca"}), FLASH
-#'     (\code{"flash"}), homoscedastic PCA (\code{"homoPCA"}), PCA
-#'     followed by shrinking the variances using limma
+#'     Li (2012)}, just naive PCA (\code{"pca"}), homoscedastic FLASH
+#'     (\code{"flash"}), heteroscedastic FLASH
+#'     (\code{"flash_hetero"}), homoscedastic PCA (\code{"homoPCA"}),
+#'     PCA followed by shrinking the variances using limma
 #'     (\code{"pca_shrinkvar"}), or moderated factor analysis
 #'     (\code{"mod_fa"}).
 #' @param lambda_type See \code{\link{succotash_given_alpha}} for
@@ -483,14 +484,16 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
 succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                       z_start_sd = 1,
                       fa_method = c("reg_mle", "quasi_mle", "pca", "flash",
-                                    "homoPCA", "pca_shrinkvar", "mod_fa"),
+                                    "homoPCA", "pca_shrinkvar", "mod_fa",
+                                    "flash_hetero"),
                       lambda_type = "zero_conc", mix_type = 'normal',
                       likelihood = c("normal", "t"), lambda0 = 10,
                       tau_seq = NULL, em_pi_init = NULL) {
     ncol_x <- ncol(X)
 
     fa_method <- match.arg(fa_method, c("reg_mle", "quasi_mle", "pca", "flash",
-                                        "homoPCA", "pca_shrinkvar", "mod_fa"))
+                                        "homoPCA", "pca_shrinkvar", "mod_fa",
+                                        "flash_hetero"))
 
     likelihood <- match.arg(likelihood, c("normal", "t"))
 
@@ -534,6 +537,16 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
         }
         sig_diag <- rep(mean(var_vec), length = nrow(F_mat))
         alpha <- F_mat
+        nu <- n - 1
+    } else if (fa_method == "flash_hetero" & requireNamespace("flashr", quietly = TRUE)) {
+        ## flashr is currently a private repo and not accessible to the public
+        Y_current <- Y_tilde[2:n, ]
+        flashr_out <- flashr::greedy(Y, K = k, r1_type = "nonconstant")
+        gl <- flashr_out$l
+        fl <- flashr_out$f
+        b_out <- flashr::backfitting(Y, Lest = gl, Fest = fl, r1_type = "nonconstant")
+        sig_diag <- b_out$sigmae2
+        alpha <- b_out$f
         nu <- n - 1
     } else if (fa_method == "homoPCA") {
         Y_current <- Y_tilde[2:n, ]

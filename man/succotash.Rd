@@ -7,7 +7,7 @@ SHrinkage.}
 \usage{
 succotash(Y, X, k, sig_reg = 0.01, num_em_runs = 2, z_start_sd = 1,
   fa_method = c("reg_mle", "quasi_mle", "pca", "flash", "homoPCA",
-  "pca_shrinkvar", "mod_fa"), lambda_type = "zero_conc",
+  "pca_shrinkvar", "mod_fa", "flash_hetero"), lambda_type = "zero_conc",
   mix_type = "normal", likelihood = c("normal", "t"), lambda0 = 10,
   tau_seq = NULL, em_pi_init = NULL)
 }
@@ -36,9 +36,10 @@ regularized MLE implemented in \code{\link{factor_mle}}
 (\code{"reg_mle"}), two methods fromthe package \code{cate}:
 the quasi-MLE (\code{"quasi_mle"}) from
 \href{http://projecteuclid.org/euclid.aos/1334581749}{Bai and
-Li (2012)}, just naive PCA (\code{"pca"}), FLASH
-(\code{"flash"}), homoscedastic PCA (\code{"homoPCA"}), PCA
-followed by shrinking the variances using limma
+Li (2012)}, just naive PCA (\code{"pca"}), homoscedastic FLASH
+(\code{"flash"}), heteroscedastic FLASH
+(\code{"flash_hetero"}), homoscedastic PCA (\code{"homoPCA"}),
+PCA followed by shrinking the variances using limma
 (\code{"pca_shrinkvar"}), or moderated factor analysis
 (\code{"mod_fa"}).}
 
