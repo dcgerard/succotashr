@@ -7,9 +7,10 @@ SHrinkage.}
 \usage{
 succotash(Y, X, k, sig_reg = 0.01, num_em_runs = 2, z_start_sd = 1,
   fa_method = c("reg_mle", "quasi_mle", "pca", "flash", "homoPCA",
-  "pca_shrinkvar", "mod_fa", "flash_hetero"), lambda_type = "zero_conc",
-  mix_type = "normal", likelihood = c("normal", "t"), lambda0 = 10,
-  tau_seq = NULL, em_pi_init = NULL)
+  "pca_shrinkvar", "mod_fa", "flash_hetero", "non_homo", "non_hetero"),
+  lambda_type = "zero_conc", mix_type = "normal", likelihood = c("normal",
+  "t"), lambda0 = 10, tau_seq = NULL, em_pi_init = NULL,
+  plot_new_ests = FALSE)
 }
 \arguments{
 \item{Y}{An \code{n} by \code{p} matrix of response variables.}
@@ -41,7 +42,8 @@ Li (2012)}, just naive PCA (\code{"pca"}), homoscedastic FLASH
 (\code{"flash_hetero"}), homoscedastic PCA (\code{"homoPCA"}),
 PCA followed by shrinking the variances using limma
 (\code{"pca_shrinkvar"}), or moderated factor analysis
-(\code{"mod_fa"}).}
+(\code{"mod_fa"}). Two methods for no confounder adjustment are
+available, \code{"non_homo"} and \code{"non_hetero"}.}
 
 \item{lambda_type}{See \code{\link{succotash_given_alpha}} for
 options on the regularization parameter of the mixing
@@ -65,6 +67,9 @@ starting values of \eqn{\pi}. If \code{NULL}, then one of three
 options are implemented in calculating \code{pi_init} based on
 the value of \code{pi_init_type}. Only available in normal
 mixtures for now.}
+
+\item{plot_new_ests}{A logical. Should we plot the mixing
+proportions at each iteration of the EM algorithm?}
 }
 \value{
 See \code{\link{succotash_given_alpha}} for details of output.

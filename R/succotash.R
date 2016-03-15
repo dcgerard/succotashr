@@ -219,7 +219,9 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
         }
     }
 
-    if (is.null(Z_init)) {
+    if (is.null(alpha)) {
+        ## do nothing
+    } else if (is.null(Z_init)) {
         Z_init <- matrix(rnorm(k, sd = z_start_sd), nrow = k)
     } else if (length(Z_init) != k) {
         Z_init <- matrix(rnorm(k, sd = z_start_sd), nrow = k)
@@ -387,11 +389,11 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
             }
         }
     }
-    
+
     sum_out <- succotash_summaries(Y = Y, Z = em_out$Z, pi_vals = em_out$pi_vals,
                                    alpha = alpha, sig_diag = sig_diag, tau_seq = em_out$tau_seq)
     q_vals <- lfdr_to_q(lfdr = sum_out$lfdr)
-    
+
     return(list(Z = em_out$Z, pi_vals = em_out$pi_vals, tau_seq = em_out$tau_seq,
                 lfdr = sum_out$lfdr, lfsr = sum_out$lfsr, qvals = q_vals,
                 betahat = sum_out$beta_hat))
@@ -456,7 +458,8 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
 #'     (\code{"flash_hetero"}), homoscedastic PCA (\code{"homoPCA"}),
 #'     PCA followed by shrinking the variances using limma
 #'     (\code{"pca_shrinkvar"}), or moderated factor analysis
-#'     (\code{"mod_fa"}).
+#'     (\code{"mod_fa"}). Two methods for no confounder adjustment are
+#'     available, \code{"non_homo"} and \code{"non_hetero"}.
 #' @param lambda_type See \code{\link{succotash_given_alpha}} for
 #'     options on the regularization parameter of the mixing
 #'     proportions.
@@ -474,6 +477,8 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
 #'     mixtures for now.
 #' @param likelihood Which likelihood should we use? Normal
 #'     (\code{"normal"}) or t (\code{"t"})?
+#' @param plot_new_ests A logical. Should we plot the mixing
+#'     proportions at each iteration of the EM algorithm?
 #'
 #' @return See \code{\link{succotash_given_alpha}} for details of output.
 #'
@@ -485,15 +490,18 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                       z_start_sd = 1,
                       fa_method = c("reg_mle", "quasi_mle", "pca", "flash",
                                     "homoPCA", "pca_shrinkvar", "mod_fa",
-                                    "flash_hetero"),
+                                    "flash_hetero", "non_homo", "non_hetero"),
                       lambda_type = "zero_conc", mix_type = 'normal',
                       likelihood = c("normal", "t"), lambda0 = 10,
-                      tau_seq = NULL, em_pi_init = NULL) {
+                      tau_seq = NULL, em_pi_init = NULL,
+                      plot_new_ests = FALSE) {
     ncol_x <- ncol(X)
 
-    fa_method <- match.arg(fa_method, c("reg_mle", "quasi_mle", "pca", "flash",
-                                        "homoPCA", "pca_shrinkvar", "mod_fa",
-                                        "flash_hetero"))
+    fa_method <- match.arg(fa_method, c("reg_mle", "quasi_mle", "pca",
+                                        "flash", "homoPCA",
+                                        "pca_shrinkvar", "mod_fa",
+                                        "flash_hetero", "non_homo",
+                                        "non_hetero"))
 
     likelihood <- match.arg(likelihood, c("normal", "t"))
 
@@ -507,7 +515,19 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
 
 
     ## Factor Analysis Methods -----------------------------------------------
-    if (fa_method == "quasi_mle" & requireNamespace("cate", quietly = TRUE)) {
+    if (k == 0 | fa_method == "non_homo" | fa_method == "non_hetero") {
+        k <- 0
+        if(fa_method == "non_homo") {
+            Y_current <- Y_tilde[2:n, ]
+            sig_diag <- rep(mean(Y_current ^ 2), ncol(Y_current))
+            alpha <- NULL
+        } else {
+            ## no factor analysis
+            Y_current <- Y_tilde[2:n, ]
+            sig_diag <- colMeans(Y_current ^ 2)
+            alpha <- NULL
+        }
+    } else if (fa_method == "quasi_mle" & requireNamespace("cate", quietly = TRUE)) {
         ## then use the maximum quasi-likelihood method of wang et al
         qml_out <- cate::fa.em(Y = Y_tilde[2:n, ], r = k)
         alpha <- qml_out$Gamma
@@ -541,10 +561,10 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
     } else if (fa_method == "flash_hetero" & requireNamespace("flashr", quietly = TRUE)) {
         ## flashr is currently a private repo and not accessible to the public
         Y_current <- Y_tilde[2:n, ]
-        flashr_out <- flashr::greedy(Y, K = k, r1_type = "nonconstant")
+        flashr_out <- flashr::greedy(Y_current, K = k, r1_type = "nonconstant")
         gl <- flashr_out$l
         fl <- flashr_out$f
-        b_out <- flashr::backfitting(Y, Lest = gl, Fest = fl, r1_type = "nonconstant")
+        b_out <- flashr::backfitting(Y_current, Lest = gl, Fest = fl, r1_type = "nonconstant")
         sig_diag <- b_out$sigmae2
         alpha <- b_out$f
         nu <- n - 1
@@ -573,7 +593,11 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
     ## absorb fnorm(X) into Y_tilde[1,], alpha, and sig_diag -----------------
     fnorm_x <- abs(qr.R(qr_x)[ncol_x, ncol_x])  ## since dealt with sign earlier
     Y1_scaled <- matrix(Y_tilde[1, ] / fnorm_x, ncol = 1)
-    alpha_scaled <- alpha / fnorm_x
+    if (k != 0) {
+        alpha_scaled <- alpha / fnorm_x
+    } else {
+        alpha_scaled <- NULL
+    }
     sig_diag_scaled <- sig_diag / (fnorm_x ^ 2)
 
     ## Fit succotash ---------------------------------------------------------
@@ -583,7 +607,8 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                                              sig_diag = sig_diag_scaled,
                                              num_em_runs = num_em_runs, em_z_start_sd = z_start_sd,
                                              lambda_type = lambda_type, lambda0 = lambda0,
-                                             tau_seq = tau_seq, em_pi_init = em_pi_init)
+                                             tau_seq = tau_seq, em_pi_init = em_pi_init,
+                                             plot_new_ests = plot_new_ests)
         } else if (mix_type == 'uniform') {
             ## right now only runs one em
             ## does not return lfsr
