@@ -417,7 +417,7 @@ uniform_succ_given_alpha <-
     lfdr <- probs[length(a_seq) + 1,]
     qvals <- ashr::qval.from.lfdr(lfdr)
 
-    pi0 <- pi_vals[length(a_seq) + 1]
+    pi0 <- pi_current[length(a_seq) + 1]
 
     #        sq_out <-
     #            SQUAREM::fpiter(par = pi_Z, lambda = lambda, alpha = alpha,

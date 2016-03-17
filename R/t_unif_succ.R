@@ -148,7 +148,7 @@ t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 2,
     lfdr <- probs[length(a_seq) + 1,]
     qvals <- ashr::qval.from.lfdr(lfdr)
 
-    pi0 <- pi_vals[length(a_seq) + 1]
+    pi0 <- pi_current[length(a_seq) + 1]
 
     return(list(Z = Z_current, pi_vals = pi_current, a_seq = a_seq, b_seq = b_seq,
                 lfdr = lfdr, betahat = betahat, qvals = qvals, pi0 = pi0))

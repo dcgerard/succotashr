@@ -394,7 +394,7 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
                                    alpha = alpha, sig_diag = sig_diag, tau_seq = em_out$tau_seq)
     q_vals <- lfdr_to_q(lfdr = sum_out$lfdr)
 
-    pi0 <- pi_vals[1]
+    pi0 <- em_out$pi_vals[1]
 
     return(list(Z = em_out$Z, pi_vals = em_out$pi_vals, tau_seq = em_out$tau_seq,
                 lfdr = sum_out$lfdr, lfsr = sum_out$lfsr, qvals = q_vals,
