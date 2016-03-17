@@ -7,9 +7,8 @@ summaries.}
 \usage{
 succotash_given_alpha(Y, alpha, sig_diag, num_em_runs = 2,
   print_steps = FALSE, tau_seq = NULL, em_pi_init = NULL, lambda = NULL,
-  em_Z_init = NULL, em_itermax = 1500, em_tol = 10^-6,
-  em_z_start_sd = 1, lambda_type = "zero_conc", lambda0 = 10,
-  plot_new_ests = FALSE)
+  em_Z_init = NULL, em_itermax = 500, em_tol = 10^-6, em_z_start_sd = 1,
+  lambda_type = "zero_conc", lambda0 = 10, plot_new_ests = FALSE)
 }
 \arguments{
 \item{Y}{A matrix of dimension \code{p} by \code{1}. These are the

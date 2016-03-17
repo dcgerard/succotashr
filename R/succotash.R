@@ -338,7 +338,7 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
 #'     \code{\link{succotash_summaries}}.
 succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_steps = FALSE,
                                   tau_seq = NULL, em_pi_init = NULL, lambda = NULL,
-                                  em_Z_init = NULL, em_itermax = 1500, em_tol = 10 ^ -6,
+                                  em_Z_init = NULL, em_itermax = 500, em_tol = 10 ^ -6,
                                   em_z_start_sd = 1,
                                   lambda_type = "zero_conc", lambda0 = 10,
                                   plot_new_ests = FALSE) {
@@ -394,9 +394,11 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
                                    alpha = alpha, sig_diag = sig_diag, tau_seq = em_out$tau_seq)
     q_vals <- lfdr_to_q(lfdr = sum_out$lfdr)
 
+    pi0 <- pi_vals[1]
+
     return(list(Z = em_out$Z, pi_vals = em_out$pi_vals, tau_seq = em_out$tau_seq,
                 lfdr = sum_out$lfdr, lfsr = sum_out$lfsr, qvals = q_vals,
-                betahat = sum_out$beta_hat))
+                betahat = sum_out$beta_hat, pi0 = pi0))
 }
 
 
@@ -436,72 +438,103 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
 #' estimator, or a quasi-mle implemented in the package \code{cate}.
 #'
 #' @param Y An \code{n} by \code{p} matrix of response variables.
-#' @param X An \code{n} by \code{q} matrix of covariates. Only the
-#'     variable in the last column is of interest.
-#' @param k An integer. The number of hidden confounders. This can be
-#'     estimated, for example by the \code{num.sv} function in the
-#'     \code{sva} package available on Bioconductor.
-#' @param sig_reg A numeric. If \code{fa_method} is \code{"reg_mle"},
-#'     then this is the value of the regularization parameter.
-#' @param num_em_runs An integer. The number of times we should run
-#'     the EM algorithm.
-#' @param z_start_sd A positive numeric. At the beginning of each EM
-#'     algorithm, \code{Z} is initiated with independent mean zero
-#'     normals with standard deviation \code{z_start_sd}.
-#' @param fa_method Which factor analysis method should we use? The
-#'     regularized MLE implemented in \code{\link{factor_mle}}
-#'     (\code{"reg_mle"}), two methods fromthe package \code{cate}:
-#'     the quasi-MLE (\code{"quasi_mle"}) from
-#'     \href{http://projecteuclid.org/euclid.aos/1334581749}{Bai and
-#'     Li (2012)}, just naive PCA (\code{"pca"}), homoscedastic FLASH
-#'     (\code{"flash"}), heteroscedastic FLASH
-#'     (\code{"flash_hetero"}), homoscedastic PCA (\code{"homoPCA"}),
-#'     PCA followed by shrinking the variances using limma
-#'     (\code{"pca_shrinkvar"}), or moderated factor analysis
-#'     (\code{"mod_fa"}). Two methods for no confounder adjustment are
-#'     available, \code{"non_homo"} and \code{"non_hetero"}.
-#' @param lambda_type See \code{\link{succotash_given_alpha}} for
-#'     options on the regularization parameter of the mixing
-#'     proportions.
-#' @param mix_type Should the prior be a mixture of normals
-#'     \code{mix_type = 'normal'} or a mixture of uniforms
-#'     \code{mix_type = 'uniform'}?
-#' @param lambda0 If \code{lambda_type = "zero_conc"}, then
-#'     \code{lambda0} is the amount to penalize \code{pi0}.
-#' @param tau_seq A vector of length \code{M} containing the standard
-#'     deviations (not variances) of the mixing distributions.
-#' @param em_pi_init A vector of length \code{M} containing the
-#'     starting values of \eqn{\pi}. If \code{NULL}, then one of three
-#'     options are implemented in calculating \code{pi_init} based on
-#'     the value of \code{pi_init_type}. Only available in normal
-#'     mixtures for now.
-#' @param likelihood Which likelihood should we use? Normal
-#'     (\code{"normal"}) or t (\code{"t"})?
-#' @param plot_new_ests A logical. Should we plot the mixing
-#'     proportions at each iteration of the EM algorithm?
+#' @param X An \code{n} by \code{q} matrix of covariates. Only the variable in
+#'   the last column is of interest.
+#' @param k An integer. The number of hidden confounders. This can be estimated,
+#'   for example by the \code{num.sv} function in the \code{sva} package
+#'   available on Bioconductor.
+#' @param sig_reg A numeric. If \code{fa_method} is \code{"reg_mle"}, then this
+#'   is the value of the regularization parameter.
+#' @param num_em_runs An integer. The number of times we should run the EM
+#'   algorithm.
+#' @param z_start_sd A positive numeric. At the beginning of each EM algorithm,
+#'   \code{Z} is initiated with independent mean zero normals with standard
+#'   deviation \code{z_start_sd}.
+#' @param fa_method Which factor analysis method should we use? The regularized
+#'   MLE implemented in \code{\link{factor_mle}} (\code{"reg_mle"}), two methods
+#'   fromthe package \code{cate}: the quasi-MLE (\code{"quasi_mle"}) from
+#'   \href{http://projecteuclid.org/euclid.aos/1334581749}{Bai and Li (2012)},
+#'   just naive PCA (\code{"pca"}), homoscedastic FLASH (\code{"flash"}),
+#'   heteroscedastic FLASH (\code{"flash_hetero"}), homoscedastic PCA
+#'   (\code{"homoPCA"}), PCA followed by shrinking the variances using limma
+#'   (\code{"pca_shrinkvar"}), or moderated factor analysis (\code{"mod_fa"}).
+#'   Three methods for no confounder adjustment are available,
+#'   \code{"non_homo"}, \code{"non_shrinkvar"}, and \code{"non_hetero"}.
+#' @param lambda_type See \code{\link{succotash_given_alpha}} for options on the
+#'   regularization parameter of the mixing proportions.
+#' @param mix_type Should the prior be a mixture of normals \code{mix_type =
+#'   'normal'} or a mixture of uniforms \code{mix_type = 'uniform'}?
+#' @param lambda0 If \code{lambda_type = "zero_conc"}, then \code{lambda0} is
+#'   the amount to penalize \code{pi0}.
+#' @param tau_seq A vector of length \code{M} containing the standard deviations
+#'   (not variances) of the mixing distributions.
+#' @param em_pi_init A vector of length \code{M} containing the starting values
+#'   of \eqn{\pi}. If \code{NULL}, then one of three options are implemented in
+#'   calculating \code{pi_init} based on the value of \code{pi_init_type}. Only
+#'   available in normal mixtures for now.
+#' @param likelihood Which likelihood should we use? Normal (\code{"normal"}) or
+#'   t (\code{"t"})?
+#' @param plot_new_ests A logical. Should we plot the mixing proportions at each
+#'   iteration of the EM algorithm?
+#' @param em_itermax A positive numeric. The maximum number of iterations to run
+#'   during the EM algorithm.
 #'
 #' @return See \code{\link{succotash_given_alpha}} for details of output.
+#'
+#'   \code{Y1_scaled} The OLS estimates.
+#'
+#'   \code{sig_diag_scaled} The standard errors of the OLS estimates.
+#'
+#'   \code{sig_diag} The estimates of the gene-wise variances.
+#'
+#'   \code{pi0} A non-negative numeric. The marginal probability of zero.
+#'
+#'   \code{alpha_scaled} The scaled version of the estimated coefficients of the
+#'   hidden confounders.
+#'
+#'   \code{Z} A vector of numerics. Estimated rotated confounder in second step
+#'   of succotash.
+#'
+#'   \code{pi_vals} A vector of numerics between 0 and 1. The mixing
+#'   proportions.
+#'
+#'   \code{tau_seq} A vector of non-negative numerics. The mixing variances.
+#'
+#'   \code{lfdr} A vector of numerics between 0 and 1. The local false discovery
+#'   rate. I.e. the posterior probability of a coefficient being zero.
+#'
+#'   \code{lfsr} A vector of numerics between 0 and 1. The local false sign
+#'   rate. I.e. the posterior probability of making a sign error if one chose
+#'   the most probable sign.
+#'
+#'   \code{qvals} A vector of numerics between 0 and 1. The q-values. The
+#'   average error rate if we reject all hypotheses that have smaller q-value.
+#'
+#'   \code{betahat} A vector of numerics. The posterior mean of the coefficients.
 #'
 #' @export
 #'
 #' @seealso \code{\link{succotash_given_alpha}}, \code{\link{factor_mle}},
 #'   \code{\link{succotash_summaries}}.
+#'
+#'
 succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                       z_start_sd = 1,
                       fa_method = c("reg_mle", "quasi_mle", "pca", "flash",
                                     "homoPCA", "pca_shrinkvar", "mod_fa",
-                                    "flash_hetero", "non_homo", "non_hetero"),
+                                    "flash_hetero", "non_homo", "non_hetero",
+                                    "non_shrinkvar"),
                       lambda_type = "zero_conc", mix_type = 'normal',
                       likelihood = c("normal", "t"), lambda0 = 10,
                       tau_seq = NULL, em_pi_init = NULL,
-                      plot_new_ests = FALSE) {
+                      plot_new_ests = FALSE, em_itermax = 200) {
     ncol_x <- ncol(X)
 
     fa_method <- match.arg(fa_method, c("reg_mle", "quasi_mle", "pca",
                                         "flash", "homoPCA",
                                         "pca_shrinkvar", "mod_fa",
                                         "flash_hetero", "non_homo",
-                                        "non_hetero"))
+                                        "non_hetero", "non_shrinkvar"))
 
     likelihood <- match.arg(likelihood, c("normal", "t"))
 
@@ -515,12 +548,19 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
 
 
     ## Factor Analysis Methods -----------------------------------------------
-    if (k == 0 | fa_method == "non_homo" | fa_method == "non_hetero") {
+    if (k == 0 | fa_method == "non_homo" | fa_method == "non_hetero" | fa_method == "non_shrinkvar") {
         k <- 0
         if(fa_method == "non_homo") {
             Y_current <- Y_tilde[2:n, ]
             sig_diag <- rep(mean(Y_current ^ 2), ncol(Y_current))
             alpha <- NULL
+        } else if (fa_method == "non_shrinkvar") {
+          Y_current <- Y_tilde[2:n, ]
+          mse_vec <- colMeans(Y_current ^ 2)
+          sv_out <- limma::squeezeVar(var = mse_vec, df = nrow(Y_current))
+          sig_diag <- sv_out$var.post
+          nu <- sv_out$df.prior
+          alpha <- NULL
         } else {
             ## no factor analysis
             Y_current <- Y_tilde[2:n, ]
@@ -578,7 +618,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
         nu <- n - 1
     } else if (fa_method == "pca_shrinkvar" & requireNamespace("limma", quietly = TRUE)) {
         Y_current <- Y_tilde[2:n, ]
-        pca_shrinkvar_out <- pca_shrinkvar(Y_current, k, df = "minus_one")
+        pca_shrinkvar_out <- pca_shrinkvar(Y_current, k, df = "rank_based")
         alpha <- t(pca_shrinkvar_out$F)
         sig_diag <- pca_shrinkvar_out$sigma2est
         nu <- pca_shrinkvar_out$df
@@ -608,25 +648,28 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                                              num_em_runs = num_em_runs, em_z_start_sd = z_start_sd,
                                              lambda_type = lambda_type, lambda0 = lambda0,
                                              tau_seq = tau_seq, em_pi_init = em_pi_init,
-                                             plot_new_ests = plot_new_ests)
+                                             plot_new_ests = plot_new_ests, em_itermax = em_itermax)
         } else if (mix_type == 'uniform') {
             ## right now only runs one em
             ## does not return lfsr
             suc_out <-
                 uniform_succ_given_alpha(Y = Y1_scaled, alpha = alpha_scaled,
                                          sig_diag = sig_diag_scaled, num_em_runs = num_em_runs,
-                                         em_z_start_sd = z_start_sd, lambda_type = lambda_type)
+                                         em_z_start_sd = z_start_sd, lambda_type = lambda_type,
+                                         em_itermax = em_itermax)
         }
     } else if (likelihood == "t") {
         suc_out <-
             t_uniform_succ_given_alpha(Y = Y1_scaled, alpha = alpha_scaled, nu = nu,
                                        sig_diag = sig_diag_scaled, num_em_runs = num_em_runs,
-                                       em_z_start_sd = z_start_sd, lambda_type = lambda_type)
+                                       em_z_start_sd = z_start_sd, lambda_type = lambda_type,
+                                       em_itermax = em_itermax)
     }
 
     suc_out$Y1_scaled <- Y1_scaled  ## ols estimates
     suc_out$alpha_scaled <- alpha_scaled
     suc_out$sig_diag_scaled <- sig_diag_scaled
+    suc_out$sig_diag <- sig_diag
     return(suc_out)
 }
 

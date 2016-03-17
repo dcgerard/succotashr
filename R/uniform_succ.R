@@ -415,7 +415,9 @@ uniform_succ_given_alpha <-
 
     probs <- ashr::comppostprob(m = mix_fit, x = c(Y - az), s = sqrt(sig_diag), v = rep(1000, p))
     lfdr <- probs[length(a_seq) + 1,]
-    qval <- ashr::qval.from.lfdr(lfdr)
+    qvals <- ashr::qval.from.lfdr(lfdr)
+
+    pi0 <- pi_vals[length(a_seq) + 1]
 
     #        sq_out <-
     #            SQUAREM::fpiter(par = pi_Z, lambda = lambda, alpha = alpha,
@@ -424,7 +426,7 @@ uniform_succ_given_alpha <-
     #                            fixptfn = succotash_unif_fixed)
 
     return(list(Z = Z_current, pi_vals = pi_current, a_seq = a_seq, b_seq = b_seq,
-                lfdr = lfdr, betahat = betahat, qval = qval))
+                lfdr = lfdr, betahat = betahat, qvals = qvals, pi0 = pi0))
   }
 
 #' EM algorithm for second step of SUCCOTASH

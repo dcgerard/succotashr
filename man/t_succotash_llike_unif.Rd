@@ -11,7 +11,7 @@ t_succotash_llike_unif(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag, nu)
 \item{pi_Z}{A vector. The first \code{M} values are the current values of
 \eqn{\pi}. The last \code{k} values are the current values of \eqn{Z}.}
 
-\item{lambda}{A vector. This is a length \code{M} vector with the 
+\item{lambda}{A vector. This is a length \code{M} vector with the
 regularization parameters for the mixing proportions.}
 
 \item{alpha}{A matrix. This is of dimension \code{p} by \code{k} and are the
@@ -36,7 +36,7 @@ Calculates the loglikelihood of the SUCCOTASH model under uniform mixtures and
 a t-likelihood.
 }
 \seealso{
-\code{\link{t_uniform_succ_given_alpha}} 
+\code{\link{t_uniform_succ_given_alpha}}
  \code{\link{t_succotash_unif_fixed}}.
 }
 

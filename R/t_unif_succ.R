@@ -52,7 +52,7 @@ t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 2,
                                        true_Z = NULL) {
     p <- nrow(Y)
     k <- ncol(alpha)
-    
+
     ## set up grid
     if(is.null(a_seq))
     {
@@ -127,7 +127,7 @@ t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 2,
             pi_new <- em_out$pi_new
             Z_new <- em_out$Z_new
             llike_new <- em_out$llike
-            
+
             if(llike_new > llike_current) {
                 pi_current <- pi_new
                 Z_current <- Z_new
@@ -138,26 +138,27 @@ t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 2,
 
     mix_fit <- ashr::unimix(pi = pi_current, a = c(a_seq, rep(0, length(b_seq) + 1)),
                             b = c(rep(0, length(a_seq) + 1), b_seq))
-    
+
     az <- alpha %*% matrix(Z_current, ncol = 1)
-    
+
     betahat <- ashr::postmean(m = mix_fit, betahat = c(Y - az), sebetahat = sqrt(sig_diag),
                               v = rep(nu, p))
-    
+
     probs <- ashr::comppostprob(m = mix_fit, x = c(Y - az), s = sqrt(sig_diag), v = rep(nu, p))
     lfdr <- probs[length(a_seq) + 1,]
-    qval <- ashr::qval.from.lfdr(lfdr)
-    
+    qvals <- ashr::qval.from.lfdr(lfdr)
+
+    pi0 <- pi_vals[length(a_seq) + 1]
 
     return(list(Z = Z_current, pi_vals = pi_current, a_seq = a_seq, b_seq = b_seq,
-                lfdr = lfdr, betahat = betahat, qval = qval))
+                lfdr = lfdr, betahat = betahat, qvals = qvals, pi0 = pi0))
 }
 
 #' EM algorithm for uniform mixtures and t-likelihood
 #'
 #'
 #'
-#' @inheritParams t_uniform_succ_given_alpha 
+#' @inheritParams t_uniform_succ_given_alpha
 #'
 #'
 t_unif_em <- function(a_seq, b_seq, Y, alpha, sig_diag, nu, pi_init, Z_init, pi_init_type, lambda,
@@ -167,7 +168,7 @@ t_unif_em <- function(a_seq, b_seq, Y, alpha, sig_diag, nu, pi_init, Z_init, pi_
 
     p <- nrow(Y)
     k <- ncol(alpha)
-    
+
     if (is.null(pi_init) | length(pi_init) != M) {
         if (pi_init_type == "random") {
             ## random start points
@@ -185,22 +186,22 @@ t_unif_em <- function(a_seq, b_seq, Y, alpha, sig_diag, nu, pi_init, Z_init, pi_
             warning("pi_init_type is bad")
         }
     }
-    
+
     if (is.null(Z_init)) {
         Z_init <- matrix(rnorm(k, sd = em_z_start_sd), nrow = k)
     } else if (length(Z_init) != k) {
         Z_init <- matrix(rnorm(k, sd = em_z_start_sd), nrow = k)
     }
-    
+
     pi_Z <- c(pi_init, Z_init)
-        
+
     pi_new <- pi_Z[1:M]
     plot(c(a_seq, 0, b_seq), pi_new, type = "h", ylab = expression(pi), xlab = "a or b",
          ylim = c(0,1))
     llike_current <- t_succotash_llike_unif(pi_Z = pi_Z, lambda = lambda, alpha = alpha, Y = Y,
                                             a_seq = a_seq, b_seq = b_seq, sig_diag = sig_diag, nu = nu)
     mtext(side = 3, paste("llike =", round(llike_current)))
-    
+
     em_index <- 1
     ldiff <- em_tol + 1
     zdiff <- 1
@@ -209,7 +210,7 @@ t_unif_em <- function(a_seq, b_seq, Y, alpha, sig_diag, nu, pi_init, Z_init, pi_
         llike_old <- llike_current
         Z_old <- Z_new
         pi_old <- pi_new
-        
+
         pi_Z <- c(pi_old, Z_old)
         succ_fixed_out <- t_succotash_unif_fixed(pi_Z = pi_Z, lambda = lambda, alpha = alpha,
                                                  Y = Y, nu = nu, a_seq = a_seq, b_seq = b_seq,
@@ -224,7 +225,7 @@ t_unif_em <- function(a_seq, b_seq, Y, alpha, sig_diag, nu, pi_init, Z_init, pi_
 
         ldiff <- abs(llike_current / llike_old - 1)
         zdiff <- sum(abs(Z_old - Z_new))
-        
+
         if(print_progress) {
             cat(" Iter =", em_index, "\n")
             cat("ldiff =", ldiff, "\n")
@@ -301,7 +302,7 @@ t_succotash_unif_fixed <- function(pi_Z, lambda, alpha, Y, nu, a_seq, b_seq, sig
   if (k != 0) {
     Z_old <- matrix(pi_Z[(M + 1):(M + k)], nrow = k)
   }
-  
+
   p_out <- tupdate_pi(Z_old = Z_old, pi_old = pi_old, sig_diag = sig_diag, Y = Y,
                       alpha = alpha, a_seq = a_seq, b_seq = b_seq, nu = nu, lambda = lambda)
   pi_new <- p_out$pi_new
@@ -311,26 +312,26 @@ t_succotash_unif_fixed <- function(pi_Z, lambda, alpha, Y, nu, a_seq, b_seq, sig
                  b_seq = b_seq, nu = nu, Tkj = p_out$Tkj,
                  control = list(fnscale = -1, maxit = newt_itermax))
   ## don't need to do too many iterations.
-  
+
   Z_new <- o_out$par
-  
+
   pi_Z <- c(pi_new, Z_new)
 
   return(list(pi_Z = c(pi_new, Z_new)))
 }
 
 #' EM step to update pi
-#' 
+#'
 #' @param pi_old A vector of numerics that sums to one. The current value of pi.
 #' @param Z_old A vector of numerics. The current value of Z.
 #' @inheritParams t_succotash_unif_fixed
 tupdate_pi <- function(Z_old, pi_old, sig_diag, Y, alpha, a_seq, b_seq, nu, lambda) {
-    
+
     p <- nrow(alpha)
     M <- length(pi_old)
-  
+
     az <- alpha %*% Z_old
-    
+
     left_means <- diag(1 / sqrt(sig_diag)) %*%
         outer(c(Y - az), a_seq, "-")
     right_means <- diag(1 / sqrt(sig_diag)) %*%
@@ -339,28 +340,28 @@ tupdate_pi <- function(Z_old, pi_old, sig_diag, Y, alpha, a_seq, b_seq, nu, lamb
         outer(c(Y - az), rep(0, length = length(a_seq)), "-")
     zero_means_right <- diag(1 / sqrt(sig_diag)) %*%
         outer(c(Y - az), rep(0, length = length(b_seq)), "-")
-    
+
     ## negative means are more accurate, so switch
     left_ispos <- left_means > 0
     right_ispos <- right_means > 0
-    
+
     pt_diff_left <- matrix(NA, nrow = nrow(left_means), ncol = ncol(left_means))
     pt_diff_right <- matrix(NA, nrow = nrow(right_means), ncol = ncol(right_means))
-    
+
     pt_diff_left[left_ispos] <-
         stats::pt(-1 * zero_means_left[left_ispos], df = nu) -
         stats::pt(-1 * left_means[left_ispos], df = nu)
     pt_diff_right[right_ispos] <-
         stats::pt(-1 * right_means[right_ispos], df = nu) -
         stats::pt(-1 * zero_means_right[right_ispos], df = nu)
-    
+
     pt_diff_left[!left_ispos] <-
         stats::pt(left_means[!left_ispos], df = nu) -
         stats::pt(zero_means_left[!left_ispos], df = nu)
     pt_diff_right[!right_ispos] <-
         stats::pt(zero_means_right[!right_ispos], df = nu) -
         stats::pt(right_means[!right_ispos], df = nu)
-    
+
     ## alternate way to calculate the pt_diff's
     ##obs_mat_right <- matrix(rep(b_seq, p), nrow = p, byrow = TRUE)
     ##mean_mat_right <- matrix(rep(Y-az, length(b_seq)), nrow = p)
@@ -380,9 +381,9 @@ tupdate_pi <- function(Z_old, pi_old, sig_diag, Y, alpha, a_seq, b_seq, nu, lamb
     fkj <- cbind(fkj_left, f0j, fkj_right)
     fkj_pi <- fkj %*% diag(pi_old)
     Tkj <- diag(1 / rowSums(fkj_pi)) %*% fkj_pi
-    
+
     llike_old <- sum(log(rowSums(fkj_pi)))
-    
+
     pi_new <- (colSums(Tkj) + lambda - 1) / (p - M + sum(lambda))
 
     return(list(pi_new = pi_new, Tkj = Tkj, llike_old = llike_old))
@@ -395,7 +396,7 @@ tupdate_pi <- function(Z_old, pi_old, sig_diag, Y, alpha, a_seq, b_seq, nu, lamb
 #' @inheritParams t_succotash_unif_fixed
 tfun <- function(Z_old, sig_diag, Y, alpha, Tkj, a_seq, b_seq, nu) {
     az <- alpha %*% Z_old
-    
+
     left_means <- diag(1 / sqrt(sig_diag)) %*%
         outer(c(Y - az), a_seq, "-")
     right_means <- diag(1 / sqrt(sig_diag)) %*%
@@ -404,21 +405,21 @@ tfun <- function(Z_old, sig_diag, Y, alpha, Tkj, a_seq, b_seq, nu) {
         outer(c(Y - az), rep(0, length = length(a_seq)), "-")
     zero_means_right <- diag(1 / sqrt(sig_diag)) %*%
         outer(c(Y - az), rep(0, length = length(b_seq)), "-")
-    
+
     ## negative means are more accurate, so switch
     left_ispos <- left_means > 0
     right_ispos <- right_means > 0
-    
+
     pt_diff_left <- matrix(NA, nrow = nrow(left_means), ncol = ncol(left_means))
     pt_diff_right <- matrix(NA, nrow = nrow(right_means), ncol = ncol(right_means))
-    
+
     pt_diff_left[left_ispos] <-
         stats::pt(-1 * zero_means_left[left_ispos], df = nu) -
         stats::pt(-1 * left_means[left_ispos], df = nu)
     pt_diff_right[right_ispos] <-
         stats::pt(-1 * right_means[right_ispos], df = nu) -
         stats::pt(-1 * zero_means_right[right_ispos], df = nu)
-    
+
     pt_diff_left[!left_ispos] <-
         stats::pt(left_means[!left_ispos], df = nu) -
         stats::pt(zero_means_left[!left_ispos], df = nu)
@@ -442,7 +443,7 @@ tfun <- function(Z_old, sig_diag, Y, alpha, Tkj, a_seq, b_seq, nu) {
 tgrad <- function(Z_old, sig_diag, Y, alpha, Tkj, a_seq, b_seq, nu) {
 
     az <- alpha %*% Z_old
-    
+
     left_means <- diag(1 / sqrt(sig_diag)) %*%
         outer(c(Y - az), a_seq, "-")
     right_means <- diag(1 / sqrt(sig_diag)) %*%
@@ -451,7 +452,7 @@ tgrad <- function(Z_old, sig_diag, Y, alpha, Tkj, a_seq, b_seq, nu) {
         outer(c(Y - az), rep(0, length = length(a_seq)), "-")
     zero_means_right <- diag(1 / sqrt(sig_diag)) %*%
         outer(c(Y - az), rep(0, length = length(b_seq)), "-")
-    
+
     ## negative means are more accurate, so switch
     left_ispos <- left_means > 0
     right_ispos <- right_means > 0
@@ -465,14 +466,14 @@ tgrad <- function(Z_old, sig_diag, Y, alpha, Tkj, a_seq, b_seq, nu) {
     pt_diff_right[right_ispos] <-
         stats::pt(-1 * right_means[right_ispos], df = nu) -
         stats::pt(-1 * zero_means_right[right_ispos], df = nu)
-    
+
     pt_diff_left[!left_ispos] <-
         stats::pt(left_means[!left_ispos], df = nu) -
         stats::pt(zero_means_left[!left_ispos], df = nu)
     pt_diff_right[!right_ispos] <-
         stats::pt(zero_means_right[!right_ispos], df = nu) -
         stats::pt(right_means[!right_ispos], df = nu)
-    
+
     ## calculate gradient
     dt_diff_left <- diag(1 / sqrt(sig_diag)) %*%
         (dt(zero_means_left, df = nu) - dt(left_means, df = nu))
@@ -483,13 +484,13 @@ tgrad <- function(Z_old, sig_diag, Y, alpha, Tkj, a_seq, b_seq, nu) {
     zero_part <- (Y - az) / sig_diag
     alpha_weights <-
         rowSums(Tkj * cbind(dpratios_left, zero_part, dpratios_right))
-    
+
     gradient_val <- colSums(diag(alpha_weights) %*% alpha)
-    
+
     return(gradient_val)
 }
 
-    
+
 
 
 
@@ -498,7 +499,7 @@ tgrad <- function(Z_old, sig_diag, Y, alpha, Tkj, a_seq, b_seq, nu) {
 #'
 #'@param pi_Z A vector. The first \code{M} values are the current values of
 #'  \eqn{\pi}. The last \code{k} values are the current values of \eqn{Z}.
-#'@param lambda A vector. This is a length \code{M} vector with the 
+#'@param lambda A vector. This is a length \code{M} vector with the
 #'  regularization parameters for the mixing proportions.
 #'@param alpha A matrix. This is of dimension \code{p} by \code{k} and are the
 #'  coefficients to the confounding variables.
@@ -511,10 +512,10 @@ tgrad <- function(Z_old, sig_diag, Y, alpha, Tkj, a_seq, b_seq, nu) {
 #'@param sig_diag A vector of length \code{p} containing the variances of the
 #'  observations.
 #'@param nu A positive numeric. The degrees of freedom of the t-likelihood.
-#'  
-#'@seealso \code{\link{t_uniform_succ_given_alpha}} 
+#'
+#'@seealso \code{\link{t_uniform_succ_given_alpha}}
 #'  \code{\link{t_succotash_unif_fixed}}.
-#'  
+#'
 #'@export
 t_succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag, nu) {
   M <- length(a_seq) + length(b_seq) + 1
@@ -545,19 +546,19 @@ t_succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_dia
   pt_right_diff[!right_ispos] <-
       stats::pt(right_means_zero[!right_ispos], df = nu) -
       stats::pt(right_means[!right_ispos], df = nu)
-  
+
   pt_left_diff[left_ispos] <-
       stats::pt(-1 * left_means_zero[left_ispos], df = nu) -
       stats::pt(-1 * left_means[left_ispos], df = nu)
   pt_right_diff[right_ispos] <-
       stats::pt(-1 * right_means[right_ispos], df = nu) -
       stats::pt(-1 * right_means_zero[right_ispos], df = nu)
-  
+
   pt_left_diff <- pt_left_diff %*% diag(1 / a_seq)
   pt_right_diff <- pt_right_diff %*% diag(1 / b_seq)
-  
+
   overall_fmat <- abs(cbind(pt_left_diff, zero_means, pt_right_diff))
-  
+
   llike_new <- sum(log(rowSums(overall_fmat %*% diag(pi_current))))
 
   return(llike_new)
