@@ -150,8 +150,17 @@ t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 2,
 
     pi0 <- pi_current[length(a_seq) + 1]
 
+    NegativeProb = rep(0, length = p)
+    NegativeProb <-
+      ashr::cdf_post(mix_fit, 0,
+                     betahat = c(Y - az),
+                     sebetahat = sqrt(sig_diag), v = rep(nu, p)) -
+      lfdr
+    lfsr = ifelse(NegativeProb > 0.5 * (1 - lfdr), 1 - NegativeProb,
+                  NegativeProb + lfdr)
+
     return(list(Z = Z_current, pi_vals = pi_current, a_seq = a_seq, b_seq = b_seq,
-                lfdr = lfdr, betahat = betahat, qvals = qvals, pi0 = pi0))
+                lfdr = lfdr, lfsr = lfsr, betahat = betahat, qvals = qvals, pi0 = pi0))
 }
 
 #' EM algorithm for uniform mixtures and t-likelihood

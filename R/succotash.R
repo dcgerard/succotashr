@@ -632,13 +632,13 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
 
     ## absorb fnorm(X) into Y_tilde[1,], alpha, and sig_diag -----------------
     fnorm_x <- abs(qr.R(qr_x)[ncol_x, ncol_x])  ## since dealt with sign earlier
-    Y1_scaled <- matrix(Y_tilde[1, ] / fnorm_x, ncol = 1)
+    Y1_scaled <- matrix(Y_tilde[1, ] / fnorm_x, ncol = 1) ## this is betahat from OLS
     if (k != 0) {
         alpha_scaled <- alpha / fnorm_x
     } else {
         alpha_scaled <- NULL
     }
-    sig_diag_scaled <- sig_diag / (fnorm_x ^ 2)
+    sig_diag_scaled <- sig_diag / (fnorm_x ^ 2) ## this is se of betahat ols
 
     ## Fit succotash ---------------------------------------------------------
     if (likelihood == "normal") {
@@ -650,8 +650,6 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                                              tau_seq = tau_seq, em_pi_init = em_pi_init,
                                              plot_new_ests = plot_new_ests, em_itermax = em_itermax)
         } else if (mix_type == 'uniform') {
-            ## right now only runs one em
-            ## does not return lfsr
             suc_out <-
                 uniform_succ_given_alpha(Y = Y1_scaled, alpha = alpha_scaled,
                                          sig_diag = sig_diag_scaled, num_em_runs = num_em_runs,
@@ -663,7 +661,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
             t_uniform_succ_given_alpha(Y = Y1_scaled, alpha = alpha_scaled, nu = nu,
                                        sig_diag = sig_diag_scaled, num_em_runs = num_em_runs,
                                        em_z_start_sd = z_start_sd, lambda_type = lambda_type,
-                                       em_itermax = em_itermax)
+                                       em_itermax = em_itermax, print_progress = FALSE)
     }
 
     suc_out$Y1_scaled <- Y1_scaled  ## ols estimates

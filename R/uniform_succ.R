@@ -306,7 +306,7 @@ succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag)
 #' @seealso \code{\link{succotash_llike_unif}}
 #'     \code{\link{succotash_unif_fixed}}
 #'
-#' @export
+#' @exportn
 uniform_succ_given_alpha <-
   function(Y, alpha, sig_diag, num_em_runs = 2,
            a_seq = NULL, b_seq = NULL, lambda = NULL,
@@ -419,6 +419,16 @@ uniform_succ_given_alpha <-
 
     pi0 <- pi_current[length(a_seq) + 1]
 
+    NegativeProb = rep(0, length = p)
+    NegativeProb <-
+      ashr::cdf_post(mix_fit, 0,
+               betahat = c(Y - az),
+               sebetahat = sqrt(sig_diag), v = rep(1000, p)) -
+      lfdr
+    lfsr = ifelse(NegativeProb > 0.5 * (1 - lfdr), 1 - NegativeProb,
+                  NegativeProb + lfdr)
+
+
     #        sq_out <-
     #            SQUAREM::fpiter(par = pi_Z, lambda = lambda, alpha = alpha,
     #                            Y = Y, a_seq = a_seq, b_seq = b_seq,
@@ -426,7 +436,7 @@ uniform_succ_given_alpha <-
     #                            fixptfn = succotash_unif_fixed)
 
     return(list(Z = Z_current, pi_vals = pi_current, a_seq = a_seq, b_seq = b_seq,
-                lfdr = lfdr, betahat = betahat, qvals = qvals, pi0 = pi0))
+                lfdr = lfdr, lfsr = lfsr, betahat = betahat, qvals = qvals, pi0 = pi0))
   }
 
 #' EM algorithm for second step of SUCCOTASH
