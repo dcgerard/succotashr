@@ -438,46 +438,56 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
 #' estimator, or a quasi-mle implemented in the package \code{cate}.
 #'
 #' @param Y An \code{n} by \code{p} matrix of response variables.
-#' @param X An \code{n} by \code{q} matrix of covariates. Only the variable in
-#'   the last column is of interest.
-#' @param k An integer. The number of hidden confounders. This can be estimated,
-#'   for example by the \code{num.sv} function in the \code{sva} package
-#'   available on Bioconductor.
-#' @param sig_reg A numeric. If \code{fa_method} is \code{"reg_mle"}, then this
-#'   is the value of the regularization parameter.
-#' @param num_em_runs An integer. The number of times we should run the EM
-#'   algorithm.
-#' @param z_start_sd A positive numeric. At the beginning of each EM algorithm,
-#'   \code{Z} is initiated with independent mean zero normals with standard
-#'   deviation \code{z_start_sd}.
-#' @param fa_method Which factor analysis method should we use? The regularized
-#'   MLE implemented in \code{\link{factor_mle}} (\code{"reg_mle"}), two methods
-#'   fromthe package \code{cate}: the quasi-MLE (\code{"quasi_mle"}) from
-#'   \href{http://projecteuclid.org/euclid.aos/1334581749}{Bai and Li (2012)},
-#'   just naive PCA (\code{"pca"}), homoscedastic FLASH (\code{"flash"}),
-#'   heteroscedastic FLASH (\code{"flash_hetero"}), homoscedastic PCA
-#'   (\code{"homoPCA"}), PCA followed by shrinking the variances using limma
-#'   (\code{"pca_shrinkvar"}), or moderated factor analysis (\code{"mod_fa"}).
-#'   Three methods for no confounder adjustment are available,
-#'   \code{"non_homo"}, \code{"non_shrinkvar"}, and \code{"non_hetero"}.
-#' @param lambda_type See \code{\link{succotash_given_alpha}} for options on the
-#'   regularization parameter of the mixing proportions.
-#' @param mix_type Should the prior be a mixture of normals \code{mix_type =
-#'   'normal'} or a mixture of uniforms \code{mix_type = 'uniform'}?
-#' @param lambda0 If \code{lambda_type = "zero_conc"}, then \code{lambda0} is
-#'   the amount to penalize \code{pi0}.
-#' @param tau_seq A vector of length \code{M} containing the standard deviations
-#'   (not variances) of the mixing distributions.
-#' @param em_pi_init A vector of length \code{M} containing the starting values
-#'   of \eqn{\pi}. If \code{NULL}, then one of three options are implemented in
-#'   calculating \code{pi_init} based on the value of \code{pi_init_type}. Only
-#'   available in normal mixtures for now.
-#' @param likelihood Which likelihood should we use? Normal (\code{"normal"}) or
-#'   t (\code{"t"})?
-#' @param plot_new_ests A logical. Should we plot the mixing proportions at each
-#'   iteration of the EM algorithm?
-#' @param em_itermax A positive numeric. The maximum number of iterations to run
-#'   during the EM algorithm.
+#' @param X An \code{n} by \code{q} matrix of covariates. Only the
+#'     variable in the last column is of interest.
+#' @param k An integer. The number of hidden confounders. This can be
+#'     estimated, for example by the \code{num.sv} function in the
+#'     \code{sva} package available on Bioconductor.
+#' @param sig_reg A numeric. If \code{fa_method} is \code{"reg_mle"},
+#'     then this is the value of the regularization parameter.
+#' @param num_em_runs An integer. The number of times we should run
+#'     the EM algorithm.
+#' @param z_start_sd A positive numeric. At the beginning of each EM
+#'     algorithm, \code{Z} is initiated with independent mean zero
+#'     normals with standard deviation \code{z_start_sd}.
+#' @param fa_method Which factor analysis method should we use? The
+#'     regularized MLE implemented in \code{\link{factor_mle}}
+#'     (\code{"reg_mle"}), two methods fromthe package \code{cate}:
+#'     the quasi-MLE (\code{"quasi_mle"}) from
+#'     \href{http://projecteuclid.org/euclid.aos/1334581749}{Bai and
+#'     Li (2012)}, just naive PCA (\code{"pca"}), homoscedastic FLASH
+#'     (\code{"flash"}), heteroscedastic FLASH
+#'     (\code{"flash_hetero"}), homoscedastic PCA (\code{"homoPCA"}),
+#'     PCA followed by shrinking the variances using limma
+#'     (\code{"pca_shrinkvar"}), or moderated factor analysis
+#'     (\code{"mod_fa"}).  Three methods for no confounder adjustment
+#'     are available, \code{"non_homo"}, \code{"non_shrinkvar"}, and
+#'     \code{"non_hetero"}.
+#' @param lambda_type See \code{\link{succotash_given_alpha}} for
+#'     options on the regularization parameter of the mixing
+#'     proportions.
+#' @param mix_type Should the prior be a mixture of normals
+#'     \code{mix_type = 'normal'} or a mixture of uniforms
+#'     \code{mix_type = 'uniform'}?
+#' @param lambda0 If \code{lambda_type = "zero_conc"}, then
+#'     \code{lambda0} is the amount to penalize \code{pi0}.
+#' @param tau_seq A vector of length \code{M} containing the standard
+#'     deviations (not variances) of the mixing distributions.
+#' @param em_pi_init A vector of length \code{M} containing the
+#'     starting values of \eqn{\pi}. If \code{NULL}, then one of three
+#'     options are implemented in calculating \code{pi_init} based on
+#'     the value of \code{pi_init_type}. Only available in normal
+#'     mixtures for now.
+#' @param likelihood Which likelihood should we use? Normal
+#'     (\code{"normal"}) or t (\code{"t"})?
+#' @param plot_new_ests A logical. Should we plot the mixing
+#'     proportions at each iteration of the EM algorithm?
+#' @param em_itermax A positive numeric. The maximum number of
+#'     iterations to run during the EM algorithm.
+#' @param inflate_var A positive numeric. The multiplicative amount to
+#'     inflate the variance estimates by. There is no theoretical
+#'     justification for it to be anything but 1, but I have it in
+#'     here to play around with it.
 #'
 #' @return See \code{\link{succotash_given_alpha}} for details of output.
 #'
@@ -527,7 +537,8 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                       lambda_type = "zero_conc", mix_type = 'normal',
                       likelihood = c("normal", "t"), lambda0 = 10,
                       tau_seq = NULL, em_pi_init = NULL,
-                      plot_new_ests = FALSE, em_itermax = 200) {
+                      plot_new_ests = FALSE, em_itermax = 200,
+                      inflate_var = 1) {
     ncol_x <- ncol(X)
 
     fa_method <- match.arg(fa_method, c("reg_mle", "quasi_mle", "pca",
@@ -638,7 +649,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
     } else {
         alpha_scaled <- NULL
     }
-    sig_diag_scaled <- sig_diag / (fnorm_x ^ 2) ## this is se of betahat ols
+    sig_diag_scaled <- sig_diag / (fnorm_x ^ 2) * inflate_var ## this is se of betahat ols
 
     ## Fit succotash ---------------------------------------------------------
     if (likelihood == "normal") {
