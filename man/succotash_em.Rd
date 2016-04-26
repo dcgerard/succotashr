@@ -7,7 +7,8 @@
 succotash_em(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL,
   lambda = NULL, Z_init = NULL, itermax = 1500, tol = 10^-6,
   z_start_sd = 1, print_note = FALSE, pi_init_type = "random",
-  lambda_type = "zero_conc", lambda0 = 10, plot_new_ests = FALSE)
+  lambda_type = "zero_conc", lambda0 = 10, plot_new_ests = FALSE,
+  var_scale = FALSE)
 }
 \arguments{
 \item{Y}{A matrix of dimension \code{p} by \code{1}. These are the
@@ -72,6 +73,9 @@ available. If \code{lambda_type} is \code{"zero_conc"}, then
 
 \item{plot_new_ests}{A logical. Should we plot the new estimates of
 pi?}
+
+\item{var_scale}{A logical. Should we update the scaling on the
+variances (\code{TRUE}) or not (\code{FALSE})}
 }
 \value{
 \code{pi_vals} A vector of length \code{M}. The estimates

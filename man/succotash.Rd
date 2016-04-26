@@ -10,64 +10,80 @@ succotash(Y, X, k, sig_reg = 0.01, num_em_runs = 2, z_start_sd = 1,
   "pca_shrinkvar", "mod_fa", "flash_hetero", "non_homo", "non_hetero",
   "non_shrinkvar"), lambda_type = "zero_conc", mix_type = "normal",
   likelihood = c("normal", "t"), lambda0 = 10, tau_seq = NULL,
-  em_pi_init = NULL, plot_new_ests = FALSE, em_itermax = 200)
+  em_pi_init = NULL, plot_new_ests = FALSE, em_itermax = 200,
+  var_scale = FALSE, inflate_var = 1)
 }
 \arguments{
 \item{Y}{An \code{n} by \code{p} matrix of response variables.}
 
-\item{X}{An \code{n} by \code{q} matrix of covariates. Only the variable in
-the last column is of interest.}
+\item{X}{An \code{n} by \code{q} matrix of covariates. Only the
+variable in the last column is of interest.}
 
-\item{k}{An integer. The number of hidden confounders. This can be estimated,
-for example by the \code{num.sv} function in the \code{sva} package
-available on Bioconductor.}
+\item{k}{An integer. The number of hidden confounders. This can be
+estimated, for example by the \code{num.sv} function in the
+\code{sva} package available on Bioconductor.}
 
-\item{sig_reg}{A numeric. If \code{fa_method} is \code{"reg_mle"}, then this
-is the value of the regularization parameter.}
+\item{sig_reg}{A numeric. If \code{fa_method} is \code{"reg_mle"},
+then this is the value of the regularization parameter.}
 
-\item{num_em_runs}{An integer. The number of times we should run the EM
-algorithm.}
+\item{num_em_runs}{An integer. The number of times we should run
+the EM algorithm.}
 
-\item{z_start_sd}{A positive numeric. At the beginning of each EM algorithm,
-\code{Z} is initiated with independent mean zero normals with standard
-deviation \code{z_start_sd}.}
+\item{z_start_sd}{A positive numeric. At the beginning of each EM
+algorithm, \code{Z} is initiated with independent mean zero
+normals with standard deviation \code{z_start_sd}.}
 
-\item{fa_method}{Which factor analysis method should we use? The regularized
-MLE implemented in \code{\link{factor_mle}} (\code{"reg_mle"}), two methods
-fromthe package \code{cate}: the quasi-MLE (\code{"quasi_mle"}) from
-\href{http://projecteuclid.org/euclid.aos/1334581749}{Bai and Li (2012)},
-just naive PCA (\code{"pca"}), homoscedastic FLASH (\code{"flash"}),
-heteroscedastic FLASH (\code{"flash_hetero"}), homoscedastic PCA
-(\code{"homoPCA"}), PCA followed by shrinking the variances using limma
-(\code{"pca_shrinkvar"}), or moderated factor analysis (\code{"mod_fa"}).
-Three methods for no confounder adjustment are available,
-\code{"non_homo"}, \code{"non_shrinkvar"}, and \code{"non_hetero"}.}
+\item{fa_method}{Which factor analysis method should we use? The
+regularized MLE implemented in \code{\link{factor_mle}}
+(\code{"reg_mle"}), two methods fromthe package \code{cate}:
+the quasi-MLE (\code{"quasi_mle"}) from
+\href{http://projecteuclid.org/euclid.aos/1334581749}{Bai and
+Li (2012)}, just naive PCA (\code{"pca"}), homoscedastic FLASH
+(\code{"flash"}), heteroscedastic FLASH
+(\code{"flash_hetero"}), homoscedastic PCA (\code{"homoPCA"}),
+PCA followed by shrinking the variances using limma
+(\code{"pca_shrinkvar"}), or moderated factor analysis
+(\code{"mod_fa"}).  Three methods for no confounder adjustment
+are available, \code{"non_homo"}, \code{"non_shrinkvar"}, and
+\code{"non_hetero"}.}
 
-\item{lambda_type}{See \code{\link{succotash_given_alpha}} for options on the
-regularization parameter of the mixing proportions.}
+\item{lambda_type}{See \code{\link{succotash_given_alpha}} for
+options on the regularization parameter of the mixing
+proportions.}
 
-\item{mix_type}{Should the prior be a mixture of normals \code{mix_type =
-'normal'} or a mixture of uniforms \code{mix_type = 'uniform'}?}
+\item{mix_type}{Should the prior be a mixture of normals
+\code{mix_type = 'normal'} or a mixture of uniforms
+\code{mix_type = 'uniform'}?}
 
-\item{likelihood}{Which likelihood should we use? Normal (\code{"normal"}) or
-t (\code{"t"})?}
+\item{likelihood}{Which likelihood should we use? Normal
+(\code{"normal"}) or t (\code{"t"})?}
 
-\item{lambda0}{If \code{lambda_type = "zero_conc"}, then \code{lambda0} is
-the amount to penalize \code{pi0}.}
+\item{lambda0}{If \code{lambda_type = "zero_conc"}, then
+\code{lambda0} is the amount to penalize \code{pi0}.}
 
-\item{tau_seq}{A vector of length \code{M} containing the standard deviations
-(not variances) of the mixing distributions.}
+\item{tau_seq}{A vector of length \code{M} containing the standard
+deviations (not variances) of the mixing distributions.}
 
-\item{em_pi_init}{A vector of length \code{M} containing the starting values
-of \eqn{\pi}. If \code{NULL}, then one of three options are implemented in
-calculating \code{pi_init} based on the value of \code{pi_init_type}. Only
-available in normal mixtures for now.}
+\item{em_pi_init}{A vector of length \code{M} containing the
+starting values of \eqn{\pi}. If \code{NULL}, then one of three
+options are implemented in calculating \code{pi_init} based on
+the value of \code{pi_init_type}. Only available in normal
+mixtures for now.}
 
-\item{plot_new_ests}{A logical. Should we plot the mixing proportions at each
-iteration of the EM algorithm?}
+\item{plot_new_ests}{A logical. Should we plot the mixing
+proportions at each iteration of the EM algorithm?}
 
-\item{em_itermax}{A positive numeric. The maximum number of iterations to run
-during the EM algorithm.}
+\item{em_itermax}{A positive numeric. The maximum number of
+iterations to run during the EM algorithm.}
+
+\item{var_scale}{A logical. Should we update the scaling on the
+variances (\code{TRUE}) or not (\code{FALSE}). Only works for
+the normal mixtures case right now.}
+
+\item{inflate_var}{A positive numeric. The multiplicative amount to
+inflate the variance estimates by. There is no theoretical
+justification for it to be anything but 1, but I have it in
+here to play around with it.}
 }
 \value{
 See \code{\link{succotash_given_alpha}} for details of output.

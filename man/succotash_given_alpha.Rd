@@ -8,7 +8,8 @@ summaries.}
 succotash_given_alpha(Y, alpha, sig_diag, num_em_runs = 2,
   print_steps = FALSE, tau_seq = NULL, em_pi_init = NULL, lambda = NULL,
   em_Z_init = NULL, em_itermax = 500, em_tol = 10^-6, em_z_start_sd = 1,
-  lambda_type = "zero_conc", lambda0 = 10, plot_new_ests = FALSE)
+  lambda_type = "zero_conc", lambda0 = 10, plot_new_ests = FALSE,
+  var_scale = FALSE)
 }
 \arguments{
 \item{Y}{A matrix of dimension \code{p} by \code{1}. These are the
@@ -66,6 +67,9 @@ available. If \code{lambda_type} is \code{"zero_conc"}, then
 
 \item{plot_new_ests}{A logical. Should we plot the new estimates of
 pi?}
+
+\item{var_scale}{A logical. Should we update the scaling on the
+variances (\code{TRUE}) or not (\code{FALSE})}
 }
 \value{
 \code{Z} A matrix  of dimension \code{k} by  \code{1}. The

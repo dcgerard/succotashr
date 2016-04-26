@@ -4,7 +4,7 @@
 \alias{succotash_summaries}
 \title{Provides posterior summaries in the SUCCOTASH model.}
 \usage{
-succotash_summaries(Y, Z, pi_vals, alpha, sig_diag, tau_seq)
+succotash_summaries(Y, Z, pi_vals, alpha, sig_diag, tau_seq, scale_val = 1)
 }
 \arguments{
 \item{Y}{A matrix of dimension \code{p} by \code{1}. These are the
@@ -24,6 +24,8 @@ variances of the observations.}
 
 \item{tau_seq}{A vector of length \code{M} containing the standard
 deviations (not variances) of the mixing distributions.}
+
+\item{scale_val}{A positive numeric. The amount to scale the variances by}
 }
 \value{
 \code{lfdr} (local false discovery rate) A vector of length

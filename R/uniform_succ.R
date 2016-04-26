@@ -306,7 +306,7 @@ succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag)
 #' @seealso \code{\link{succotash_llike_unif}}
 #'     \code{\link{succotash_unif_fixed}}
 #'
-#' @exportn
+#' @export
 uniform_succ_given_alpha <-
   function(Y, alpha, sig_diag, num_em_runs = 2,
            a_seq = NULL, b_seq = NULL, lambda = NULL,

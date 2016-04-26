@@ -5,11 +5,12 @@
 \title{A fixed-point iteration of the EM algorithm.}
 \usage{
 succotash_fixed(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
-  plot_new_ests = FALSE)
+  plot_new_ests = FALSE, var_scale = FALSE)
 }
 \arguments{
-\item{pi_Z}{A vector. The first \code{M} values are the current values of
-\eqn{\pi}. The last \code{k} values are the current values of \eqn{Z}.}
+\item{pi_Z}{A vector. The first \code{M} values are the current
+values of \eqn{\pi}. The last \code{k} values are the current
+values of \eqn{Z}.}
 
 \item{lambda}{A vector. This is a length \code{M} vector with the
 regularization parameters for the mixing proportions. If
@@ -29,6 +30,9 @@ variances of the observations.}
 
 \item{plot_new_ests}{A logical. Should we plot the new estimates of
 pi?}
+
+\item{var_scale}{A logical. Should we update the scaling on the
+variances (\code{TRUE}) or not (\code{FALSE})}
 }
 \value{
 \code{pi_new} A vector of length \code{M}. The update for the mixing
