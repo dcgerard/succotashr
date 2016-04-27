@@ -26,6 +26,9 @@ succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
 
     if (var_scale) {
         scale_val <- pi_Z[M + k + 1] ## the amount to scale the variance by
+        var_mat <- outer(scale_val * sig_diag, tau_seq ^ 2, "+")
+    } else {
+        var_mat <- outer(sig_diag, tau_seq ^ 2, "+")
     }
 
     if (!is.null(alpha)) {
@@ -33,7 +36,6 @@ succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
     } else {
         mean_mat <- matrix(0, ncol = M, nrow = p)
     }
-    var_mat <- outer(sig_diag, tau_seq ^ 2, "+")
     top_vals <- t(pi_old * t(dnorm(matrix(rep(Y, M), ncol = M, nrow = p), mean = mean_mat,
                                    sd = sqrt(var_mat))))
     T <- t(1 / rowSums(top_vals) * top_vals)
@@ -83,6 +85,16 @@ succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
                           method = "Brent", lower = 0, upper = 10,
                           control = list(fnscale = -1))
             scale_val_new <- oout$par
+
+            ## ## Update scale using a grid
+            ## scale_vec <- seq(0.1, 5, length = 50)
+            ## obj_vec <- rep(NA, length = length(scale_vec))
+            ## for (scale_index in 1:length(scale_vec)) {
+            ##     obj_vec[scale_index] <- fun_scale(scale_val = scale_vec[scale_index], T = T,
+            ##                                       resid_vec = c(resid_vec),
+            ##                                       tau_seq = tau_seq, sig_diag = sig_diag)
+            ## }
+            ## scale_val_new <- scale_vec[which.max(obj_vec)]
 
             scale_diff <- abs(scale_val_old / scale_val_new - 1)
             newt_index <- newt_index + 1
