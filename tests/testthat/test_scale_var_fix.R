@@ -1,7 +1,7 @@
 context("fixed point iteration of scaling variance")
 
-library(flashr)
-context("tflash vs flash")
+library(succotashr)
+context("var_scale tests")
 
 test_that("succotash_fixed will actually run with var_scale = TRUE",{
     set.seed(1200)
