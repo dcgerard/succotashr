@@ -19,6 +19,7 @@ Suggests:
     flash,
     limma,
     flashr
+Remotes: github::stephens999/ashr
 RoxygenNote: 5.0.1
 URL: https://github.com/dcgerard/succotashr
 BugReports: https://github.com/dcgerard/succotashr/issues
