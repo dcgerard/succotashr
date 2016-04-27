@@ -1,10 +1,6 @@
 language: r
 cache: packages
 
-install:
-  - ./travis-tool.sh install_bioc sva
-  - ./travis-tool.sh install_bioc limma
-
 env:
   global:
     - _R_CHECK_FORCE_SUGGESTS_=FALSE
