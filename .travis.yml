@@ -1,2 +1,7 @@
 language: r
 cache: packages
+bioc_packages: sva, limma
+
+env:
+  global:
+    - _R_CHECK_FORCE_SUGGESTS_=FALSE
