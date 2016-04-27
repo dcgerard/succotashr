@@ -1,6 +1,9 @@
 language: r
 cache: packages
-bioc_packages: sva, limma
+
+install:
+  - ./travis-tool.sh install_bioc sva
+  - ./travis-tool.sh install_bioc limma
 
 env:
   global:
