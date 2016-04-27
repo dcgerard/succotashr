@@ -692,7 +692,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
         sig_diag <- mle_out$sig_diag
         nu <- n - 1
     } else if (fa_method == "pca" & requireNamespace("cate", quietly = TRUE)) {
-        pca_out <- cate::fa.pc(Y = Y_tilde[2:n, ], r = k)
+        pca_out <- pca_naive(Y = Y_tilde[2:n, ], r = k)
         alpha <- pca_out$Gamma
         sig_diag <- pca_out$Sigma
         nu <- n - 1

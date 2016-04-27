@@ -1,21 +1,28 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+SUCCOTASH: Surrogate and Confounder Correction Occuring Together with Adaptive Shrinkage
+========================================================================================
+
+[![Build Status](https://travis-ci.org/dcgerard/succotashr.svg?branch=master)](https://travis-ci.org/dcgerard/succotashr)
+
 Description
 -----------
 
-Let \[
-Y = X\beta + Z\alpha + E,
-\] for
+Let
 
--   \(Y \in \mathbb{R}^{n\times p}\), a matrix of gene expression data with \(n\) samples and \(p\) genes,
--   \(X \in \mathbb{R}^{n \times q}\), a matrix of of \(q\) covariates,
--   \(\beta \in \mathbb{R}^{q \times p}\), the unobserved matrix of coefficients for the observed covariates,
--   \(Z \in \mathbb{R}^{n \times k}\), a matrix of hidden confounders,
--   \(\alpha \in \mathbb{R}^{k \times p}\), the matrix of hidden coefficients for the hidden confounders, and
--   \(E \sim N_{n \times p}(0, \Sigma \otimes I_n)\), the error matrix following a matrix normal with identity row covariance and diagonal column covariance \(\Sigma = diag(\sigma_1^2,\ldots,\sigma_p^2)\).
+Y = XB + ZA + E,
 
-Not accounting for the hidden covariates, \(Z\), can reduce power and result in poor control of false discovery rate.
+for
 
-`succotashr` fits this model under a two-step empirical Bayesian approach. It places a non-parametric prior on \(\beta\) and jointly estimates \(\beta\) and \(Z\alpha\). The main function is `succotash`.
+-   Y an n by p matrix of gene expression data with n samples and p genes,
+-   X an n by q matrix of of q covariates,
+-   B a q by p matrix of unobserved coefficients for the observed covariates,
+-   Z an n by k matrix of hidden confounders,
+-   A an k by p matrix of hidden coefficients for the hidden confounders, and
+-   E an n by p matrix of independent normal errors with column variances s1,...,sp.
+
+Not accounting for the hidden covariates, Z, can reduce power and result in poor control of false discovery rate.
+
+`succotashr` fits this model under a two-step empirical Bayesian approach. It places a non-parametric prior on B and jointly estimates B and ZA. The main function is `succotash`.
 
 Installation
 ------------

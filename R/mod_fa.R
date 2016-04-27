@@ -219,3 +219,22 @@ pca_shrinkvar <- function(Y, k, df = "rank_based") {
     df <- sv_out$df.prior
     return(list(F = F, sigma2est = sig_diag, df = df))
 }
+
+
+#' Basic PCA
+#'
+#' Most if not all of code is from package \code{cate}. This is mostly
+#' so people don't have to install sva and leapp if they want to use
+#' it.
+#'
+#'
+#' @param Y A matrix of numerics. The data.
+#' @param r the rank.
+pca_naive <- function (Y, r) 
+{
+    svd_Y <- svd(Y)
+    Gamma <- svd_Y$v[, 1:r] %*% diag(svd_Y$d[1:r], r, r)/sqrt(nrow(Y))
+    Z <- sqrt(nrow(Y)) * svd_Y$u[, 1:r]
+    Sigma <- apply(Y - Z %*% t(Gamma), 2, function(x) mean(x^2))
+    return(list(Gamma = Gamma, Z = Z, Sigma = Sigma))
+}
