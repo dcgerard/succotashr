@@ -21,7 +21,7 @@ test_that("succotash_fixed will actually run with var_scale = TRUE",{
     alpha <- matrix(rnorm(p * k), nrow = p)
     Y <- 2 * rnorm(p) + alpha %*% Z
 
-    pzout <- succotash_fixed(pi_Z = pi_Z, lambda = lambda, alpha = alpha, Y = Y,
+        pzout <- succotash_fixed(pi_Z = pi_Z, lambda = lambda, alpha = alpha, Y = Y,
                              tau_seq = tau_seq, sig_diag = sig_diag, plot_new_ests = plot_new_ests,
                              var_scale = TRUE)
     expect_equal(length(pzout), m + k + 1)

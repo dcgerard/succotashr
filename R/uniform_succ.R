@@ -12,21 +12,18 @@
 #'     regularization parameters for the mixing proportions.
 #'@param alpha A matrix. This is of dimension \code{p} by \code{k} and
 #'     are the coefficients to the confounding variables.
-#'@param Y A matrix of dimension \code{p} by \code{1}. These are the
-#'     observed regression coefficients of the observed variables.
 #'@param a_seq A vector of negative numerics containing the left
 #'     endpoints of the mixing uniforms.
 #'@param b_seq A vector of positiv numerics containing the right
 #'     endpoints of the mixing uniforms.
-#'@param sig_diag A vector of length \code{p} containing the variances
-#'     of the observations.
 #'@param print_ziter A logical. Should we we print each iteration of
 #'     the Z optimization?
 #'@param newt_itermax A positive integer. The maximum number of Newton
 #'     steps to perform in updating \eqn{Z}.
 #'@param tol A positive numeric. The stopping criterion for Newton's
 #'     method in updating Z.
-#'
+#' @inheritParams succotash_given_alpha
+#' 
 #'@return \code{pi_new} A vector of length \code{M}. The update for
 #'     the mixing components.
 #'
@@ -38,162 +35,167 @@
 #'
 #' @export
 succotash_unif_fixed <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
-                                 print_ziter = TRUE, newt_itermax = 100, tol = 10^-4) {
-  M <- length(a_seq) + length(b_seq) + 1
-  p <- nrow(Y)
-  k <- length(pi_Z) - M
-  pi_old <- pi_Z[1:M]
-  if (k != 0) {
-    Z_old <- matrix(pi_Z[(M + 1):(M + k)], nrow = k)
-  }
-
-  az <- alpha %*% Z_old
-
-
-  left_means <- diag(1 / sqrt(sig_diag)) %*%
-    outer(c(Y - az), a_seq, "-")
-  right_means <- diag(1 / sqrt(sig_diag)) %*%
-    outer(c(Y - az), b_seq, "-")
-  zero_means_left <- diag(1 / sqrt(sig_diag)) %*%
-    outer(c(Y - az), rep(0, length = length(a_seq)), "-")
-  zero_means_right <- diag(1 / sqrt(sig_diag)) %*%
-    outer(c(Y - az), rep(0, length = length(b_seq)), "-")
-
-  ## negative means are more accurate, so switch
-  left_ispos <- left_means > 0
-  right_ispos <- right_means > 0
-
-  pnorm_diff_left <- matrix(NA, nrow = nrow(left_means), ncol = ncol(left_means))
-  pnorm_diff_right <- matrix(NA, nrow = nrow(right_means), ncol = ncol(right_means))
-
-  pnorm_diff_left[left_ispos] <-
-    pnorm(-1 * zero_means_left[left_ispos]) - pnorm(-1 * left_means[left_ispos])
-  pnorm_diff_right[right_ispos] <-
-    pnorm(-1 * right_means[right_ispos]) - pnorm(-1 * zero_means_right[right_ispos])
-
-  pnorm_diff_left[!left_ispos] <-
-    pnorm(left_means[!left_ispos]) - pnorm(zero_means_left[!left_ispos])
-  pnorm_diff_right[!right_ispos] <-
-    pnorm(zero_means_right[!right_ispos]) - pnorm(right_means[!right_ispos])
-
-  ## alternate way to calculate the pnorm_diff's
-  #obs_mat_right <- matrix(rep(b_seq, p), nrow = p, byrow = TRUE)
-  #mean_mat_right <- matrix(rep(Y-az, length(b_seq)), nrow = p)
-  #obs_mat_left <- matrix(rep(a_seq, p), nrow = p, byrow = TRUE)
-  #mean_mat_left <- matrix(rep(Y-az, length(a_seq)), nrow = p)
-  #sig_left <- matrix(rep(sqrt(sig_diag), length(a_seq)), nrow = p)
-  #sig_right <- matrix(rep(sqrt(sig_diag), length(b_seq)), nrow = p)
-  #pnorm_diff_r <- pnorm(q = obs_mat_right, mean = mean_mat_right,
-  #                      sd = sig_right) -  pnorm(q = 0, mean = mean_mat_right, sd = sig_left)
-
-
-  ## calculate new pi values
-  fkj_left <- pnorm_diff_left %*% diag(1 / abs(a_seq))
-  fkj_right <- pnorm_diff_right %*% diag(1 / b_seq)
-  f0j <- dnorm(Y, az, sqrt(sig_diag))
-  fkj <- cbind(fkj_left, f0j, fkj_right)
-  fkj_pi <- fkj %*% diag(pi_old)
-  Tkj <- diag(1 / rowSums(fkj_pi)) %*% fkj_pi
-
-  llike_old <- sum(log(rowSums(fkj_pi)))
-
-  pi_new <- (colSums(Tkj) + lambda - 1) / (p - M + sum(lambda))
-
-  z_diff <- tol + 1
-  newt_iter <- 1
-  Z_new <- Z_old
-  mult_val <- 1
-  llike_new <- llike_old
-  while(z_diff > tol & newt_iter < newt_itermax) {
-    did_I_move <- TRUE
-
-    llike_old <- llike_new
-    Z_old <- Z_new
+                                 print_ziter = FALSE, newt_itermax = 100, tol = 10^-4,
+                                 var_scale = FALSE) {
+    M <- length(a_seq) + length(b_seq) + 1
+    p <- nrow(Y)
+    k <- length(pi_Z) - M
+    pi_old <- pi_Z[1:M]
+    if (k != 0) {
+        Z_old <- matrix(pi_Z[(M + 1):(M + k)], nrow = k)
+    }
 
     az <- alpha %*% Z_old
-
+    
+    assertthat::assert_that(length(lambda) == M)
+    assertthat::are_equal(sum(pi_old), 1, tol = 10^-4)
+    
     left_means <- diag(1 / sqrt(sig_diag)) %*%
-      outer(c(Y - az), a_seq, "-")
+        outer(c(Y - az), a_seq, "-")
     right_means <- diag(1 / sqrt(sig_diag)) %*%
-      outer(c(Y - az), b_seq, "-")
+        outer(c(Y - az), b_seq, "-")
     zero_means_left <- diag(1 / sqrt(sig_diag)) %*%
-      outer(c(Y - az), rep(0, length = length(a_seq)), "-")
+        outer(c(Y - az), rep(0, length = length(a_seq)), "-")
     zero_means_right <- diag(1 / sqrt(sig_diag)) %*%
-      outer(c(Y - az), rep(0, length = length(b_seq)), "-")
-
+        outer(c(Y - az), rep(0, length = length(b_seq)), "-")
+    
     ## negative means are more accurate, so switch
     left_ispos <- left_means > 0
     right_ispos <- right_means > 0
-
+    
     pnorm_diff_left <- matrix(NA, nrow = nrow(left_means), ncol = ncol(left_means))
     pnorm_diff_right <- matrix(NA, nrow = nrow(right_means), ncol = ncol(right_means))
-
+    
     pnorm_diff_left[left_ispos] <-
-      pnorm(-1 * zero_means_left[left_ispos]) - pnorm(-1 * left_means[left_ispos])
+        pnorm(-1 * zero_means_left[left_ispos]) - pnorm(-1 * left_means[left_ispos])
     pnorm_diff_right[right_ispos] <-
-      pnorm(-1 * right_means[right_ispos]) - pnorm(-1 * zero_means_right[right_ispos])
-
+        pnorm(-1 * right_means[right_ispos]) - pnorm(-1 * zero_means_right[right_ispos])
+    
     pnorm_diff_left[!left_ispos] <-
-      pnorm(left_means[!left_ispos]) - pnorm(zero_means_left[!left_ispos])
+        pnorm(left_means[!left_ispos]) - pnorm(zero_means_left[!left_ispos])
     pnorm_diff_right[!right_ispos] <-
-      pnorm(zero_means_right[!right_ispos]) - pnorm(right_means[!right_ispos])
-
-    ## calculate gradient
-    dnorm_diff_left <- diag(1 / sqrt(sig_diag)) %*%
-      (dnorm(zero_means_left) - dnorm(left_means))
-    dnorm_diff_right <- diag(1 / sqrt(sig_diag)) %*%
-      (dnorm(right_means) - dnorm(zero_means_right))
-    dpratios_left <- dnorm_diff_left / pnorm_diff_left
-    dpratios_right <- dnorm_diff_right / pnorm_diff_right
-    zero_part <- (Y - az) / sig_diag
-    alpha_weights <-
-      rowSums(Tkj * cbind(dpratios_left, zero_part, dpratios_right))
-
-    gradient_val <- colSums(diag(alpha_weights) %*% alpha)
-
-    ##calculate Hessian
-    top_left <- left_means * dnorm(left_means) -
-      zero_means_left *  dnorm(zero_means_left)
-    top_right <- zero_means_right * dnorm(zero_means_right) -
-      right_means * dnorm(right_means)
-
-    sum1 <- top_left / pnorm_diff_left - dpratios_left^2
-    sum2 <- top_right / pnorm_diff_right - dpratios_right^2
-    sum0 <- -1 / sig_diag
-
-    diag_weights <- rowSums(Tkj * cbind(sum1, sum0, sum2))
-
-    hessian_val <- t(alpha) %*% diag(diag_weights) %*% alpha
-
-    Z_new <- Z_old -  mult_val * solve(hessian_val) %*% gradient_val
-
-    z_diff <- sum(abs(Z_new - Z_old))
-
-    llike_new <- succotash_llike_unif(c(pi_new, Z_new), lambda, alpha, Y, a_seq, b_seq, sig_diag)
-
-    if(llike_new < llike_old) {
-      ## halve the step size and reset to old Z value
-      mult_val <- mult_val / 2
-      Z_new <- Z_old
-      llike_new <- llike_old
-      did_I_move <- FALSE
+        pnorm(zero_means_right[!right_ispos]) - pnorm(right_means[!right_ispos])
+    
+    ## alternate way to calculate the pnorm_diff's
+    ##obs_mat_right <- matrix(rep(b_seq, p), nrow = p, byrow = TRUE)
+    ##mean_mat_right <- matrix(rep(Y-az, length(b_seq)), nrow = p)
+    ##obs_mat_left <- matrix(rep(a_seq, p), nrow = p, byrow = TRUE)
+    ##mean_mat_left <- matrix(rep(Y-az, length(a_seq)), nrow = p)
+    ##sig_left <- matrix(rep(sqrt(sig_diag), length(a_seq)), nrow = p)
+    ##sig_right <- matrix(rep(sqrt(sig_diag), length(b_seq)), nrow = p)
+    ##pnorm_diff_r <- pnorm(q = obs_mat_right, mean = mean_mat_right,
+    ##                      sd = sig_right) -  pnorm(q = 0, mean = mean_mat_right, sd = sig_left)
+    
+    
+    ## calculate new pi values
+    fkj_left <- pnorm_diff_left %*% diag(1 / abs(a_seq))
+    fkj_right <- pnorm_diff_right %*% diag(1 / b_seq)
+    f0j <- dnorm(Y, az, sqrt(sig_diag))
+    fkj <- cbind(fkj_left, f0j, fkj_right)
+    fkj_pi <- fkj %*% diag(pi_old)
+    Tkj <- diag(1 / rowSums(fkj_pi)) %*% fkj_pi
+    
+    llike_old <- sum(log(rowSums(fkj_pi)))
+    
+    pi_new <- (colSums(Tkj) + lambda - 1) / (p - M + sum(lambda))
+    
+    z_diff <- tol + 1
+    newt_iter <- 1
+    Z_new <- Z_old
+    mult_val <- 1
+    llike_new <- llike_old
+    while(z_diff > tol & newt_iter < newt_itermax) {
+        did_I_move <- TRUE
+        
+        llike_old <- llike_new
+        Z_old <- Z_new
+        
+        az <- alpha %*% Z_old
+        
+        left_means <- diag(1 / sqrt(sig_diag)) %*%
+            outer(c(Y - az), a_seq, "-")
+        right_means <- diag(1 / sqrt(sig_diag)) %*%
+            outer(c(Y - az), b_seq, "-")
+        zero_means_left <- diag(1 / sqrt(sig_diag)) %*%
+            outer(c(Y - az), rep(0, length = length(a_seq)), "-")
+        zero_means_right <- diag(1 / sqrt(sig_diag)) %*%
+            outer(c(Y - az), rep(0, length = length(b_seq)), "-")
+        
+        ## negative means are more accurate, so switch
+        left_ispos <- left_means > 0
+        right_ispos <- right_means > 0
+        
+        pnorm_diff_left <- matrix(NA, nrow = nrow(left_means), ncol = ncol(left_means))
+        pnorm_diff_right <- matrix(NA, nrow = nrow(right_means), ncol = ncol(right_means))
+        
+        pnorm_diff_left[left_ispos] <-
+            pnorm(-1 * zero_means_left[left_ispos]) - pnorm(-1 * left_means[left_ispos])
+        pnorm_diff_right[right_ispos] <-
+            pnorm(-1 * right_means[right_ispos]) - pnorm(-1 * zero_means_right[right_ispos])
+        
+        pnorm_diff_left[!left_ispos] <-
+            pnorm(left_means[!left_ispos]) - pnorm(zero_means_left[!left_ispos])
+        pnorm_diff_right[!right_ispos] <-
+            pnorm(zero_means_right[!right_ispos]) - pnorm(right_means[!right_ispos])
+        
+        ## calculate gradient
+        dnorm_diff_left <- diag(1 / sqrt(sig_diag)) %*%
+            (dnorm(zero_means_left) - dnorm(left_means))
+        dnorm_diff_right <- diag(1 / sqrt(sig_diag)) %*%
+            (dnorm(right_means) - dnorm(zero_means_right))
+        dpratios_left <- dnorm_diff_left / pnorm_diff_left
+        dpratios_right <- dnorm_diff_right / pnorm_diff_right
+        zero_part <- (Y - az) / sig_diag
+        alpha_weights <- rowSums(Tkj * cbind(dpratios_left, zero_part, dpratios_right))
+        
+        gradient_val <- colSums(diag(alpha_weights) %*% alpha)
+        
+        ##calculate Hessian
+        top_left <- left_means * dnorm(left_means) -
+            zero_means_left *  dnorm(zero_means_left)
+        top_right <- zero_means_right * dnorm(zero_means_right) -
+            right_means * dnorm(right_means)
+        
+        sum1 <- top_left / pnorm_diff_left - dpratios_left^2
+        sum2 <- top_right / pnorm_diff_right - dpratios_right^2
+        sum0 <- -1 / sig_diag
+        
+        diag_weights <- rowSums(Tkj * cbind(sum1, sum0, sum2))
+        
+        hessian_val <- t(alpha) %*% diag(diag_weights) %*% alpha
+        
+        Z_new <- Z_old -  mult_val * solve(hessian_val) %*% gradient_val
+        
+        z_diff <- sum(abs(Z_new - Z_old))
+        
+        llike_new <- succotash_llike_unif(pi_Z = c(pi_new, Z_new), lambda = lambda,
+                                          alpha = alpha, Y = Y, a_seq = a_seq,
+                                          b_seq = b_seq, sig_diag = sig_diag)
+        
+        if(llike_new < llike_old) {
+            ## halve the step size and reset to old Z value
+            mult_val <- mult_val / 2
+            Z_new <- Z_old
+            llike_new <- llike_old
+            did_I_move <- FALSE
+        }
+        
+        if(print_ziter) {
+            cat("Iteration =", newt_iter, "\n")
+            cat("Did I move?", did_I_move, "\n")
+            cat("Z Diff = ", z_diff, "\n")
+            cat("llike = ", llike_new, '\n\n')
+            newt_iter <- newt_iter + 1
+        }
     }
-
-    if(print_ziter) {
-      cat("Iteration =", newt_iter, "\n")
-      cat("Did I move?", did_I_move, "\n")
-      cat("Z Diff = ", z_diff, "\n")
-      cat("llike = ", llike_new, '\n\n')
-      newt_iter <- newt_iter + 1
-    }
-  }
-
-  ## check to see if Hessian is negative definite at final Z val.
-  eval_hess <- eigen(hessian_val, only.values = TRUE)$values
-
-  pi_Z <- c(pi_new, Z_new)
-
-  return(list(pi_Z = c(pi_new, Z_new), llike_new = llike_new, eval_hess = eval_hess))
+    
+    ## check to see if Hessian is negative definite at final Z val.
+    eval_hess <- eigen(hessian_val, only.values = TRUE)$values
+    
+    pi_Z <- c(pi_new, Z_new)
+    
+    ##return(list(pi_Z = c(pi_new, Z_new), llike_new = llike_new, eval_hess = eval_hess))
+    return(pi_Z = c(pi_new, Z_new))
 }
 
 #'Calculates the loglikelihood of the SUCCOTASH model under uniform
@@ -429,11 +431,7 @@ uniform_succ_given_alpha <-
                   NegativeProb + lfdr)
 
 
-    #        sq_out <-
-    #            SQUAREM::fpiter(par = pi_Z, lambda = lambda, alpha = alpha,
-    #                            Y = Y, a_seq = a_seq, b_seq = b_seq,
-    #                            sig_diag = sig_diag,
-    #                            fixptfn = succotash_unif_fixed)
+    
 
     return(list(Z = Z_current, pi_vals = pi_current, a_seq = a_seq, b_seq = b_seq,
                 lfdr = lfdr, lfsr = lfsr, betahat = betahat, qvals = qvals, pi0 = pi0))
@@ -446,15 +444,25 @@ uniform_succ_given_alpha <-
 #' @inheritParams uniform_succ_given_alpha
 #'
 #'
-uniform_succ_em <- function(pi_init, Z_init, a_seq, b_seq, lambda, alpha, Y, sig_diag,
-                            print_ziter, print_progress, em_z_start_sd, em_itermax = 200,
+uniform_succ_em <- function(Y, alpha, sig_diag, a_seq, b_seq,
+                            pi_init = NULL, Z_init = NULL, lambda = NULL,
+                            print_ziter = FALSE, print_progress = FALSE, em_z_start_sd = 1,
+                            em_itermax = 200,
                             em_tol = 10^-6,
                             pi_init_type = "random", true_Z = NULL) {
 
     M <- length(a_seq) + length(b_seq) + 1
 
+    assertthat::are_equal(nrow(Y), nrow(alpha))
+
     p <- nrow(Y)
     k <- ncol(alpha)
+
+    if (is.null(lambda)) {
+        lambda <- rep(1, M)
+    }
+
+    assertthat::are_equal(length(lambda), M)
 
     if (is.null(pi_init) | length(pi_init) != M) {
       if (pi_init_type == "random") {
@@ -484,52 +492,65 @@ uniform_succ_em <- function(pi_init, Z_init, a_seq, b_seq, lambda, alpha, Y, sig
     pi_Z <- c(pi_init, Z_init)
 
     pi_new <- pi_Z[1:M]
-    plot(c(a_seq, 0, b_seq), pi_new, type = "h", ylab = expression(pi), xlab = "a or b",
-         ylim = c(0,1))
+    ##plot(c(a_seq, 0, b_seq), pi_new, type = "h", ylab = expression(pi), xlab = "a or b",
+    ##     ylim = c(0,1))
     llike_current <- succotash_llike_unif(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag)
-    mtext(side = 3, paste("llike =", round(llike_current)))
+    ##mtext(side = 3, paste("llike =", round(llike_current)))
 
-    em_index <- 1
-    ldiff <- em_tol + 1
-    zdiff <- 1
-    Z_new <- Z_init
-    while(em_index < em_itermax & ldiff > em_tol ) {
-      llike_old <- llike_current
-      Z_old <- Z_new
-      succ_fixed_out <- succotash_unif_fixed(pi_Z, lambda, alpha, Y, a_seq, b_seq,
-                                             sig_diag, print_ziter = print_ziter)
-      pi_Z <- succ_fixed_out$pi_Z
-      llike_current <- succ_fixed_out$llike_new
-      eval_hess <- succ_fixed_out$eval_hess
-      pi_new <- pi_Z[1:M]
-      Z_new <- pi_Z[(M+1):length(pi_Z)]
-      ldiff <- abs(llike_current / llike_old - 1)
-      zdiff <- sum(abs(Z_old - Z_new))
 
-      if(print_progress) {
-        cat(" Iter =", em_index, "\n")
-        cat("ldiff =", ldiff, "\n")
-        cat("zdiff =", zdiff, "\n\n")
-        par(mgp = c(1.5, 0.5, 0), mar = c(3, 3, 2, 0.5))
-        if(!is.null(true_Z)) {
-          par(mfrow = c(2,1))
-          lm_Z <- lm(Z_new ~ true_Z)
-          plot(true_Z, Z_new, xlab = "True Z", ylab = "Estimated Z")
-          abline(lm_Z, lty = 2, col = 2)
-          abline(0, 1)
-          legend("bottomright", c("Y = X", "Regression Line"),
-                 lty = c(1,2), col = c(1,2))
-        }
-        plot(c(a_seq, 0, b_seq), pi_new, type = "h", ylab = expression(hat(pi)[k]),
-             xlab = "a or b", ylim = c(0,max(c(0.5, pi_new))))
-        mtext(side = 3, paste0("Iteration = ", em_index, ", llike = ",
-                               round(llike_current), ", Min/Max Eigenvalue = ",
-                               format(min(eval_hess), digits = 3), "/",
-                               format(max(eval_hess), digits = 3)))
-        par(mfrow = c(1,1))
-      }
-      em_index <- em_index + 1
-    }
+    sq_out <- SQUAREM::fpiter(par = pi_Z, lambda = lambda, alpha = alpha,
+                              Y = Y, a_seq = a_seq, b_seq = b_seq,
+                              sig_diag = sig_diag,
+                              fixptfn = succotash_unif_fixed,
+                              control = list(maxiter = em_itermax, tol = em_tol))
+
+    pi_new <- sq_out$par[1:M]
+    Z_new  <- sq_out$par[(M+1):length(pi_Z)]
+    llike_current <- succotash_llike_unif(pi_Z = c(pi_new, Z_new), lambda = lambda,
+                                          alpha = alpha, Y = Y, a_seq = a_seq,
+                                          b_seq = b_seq, sig_diag = sig_diag)
+
+    ## em_index <- 1
+    ## ldiff <- em_tol + 1
+    ## zdiff <- 1
+    ## Z_new <- Z_init
+    ## while(em_index < em_itermax & ldiff > em_tol ) {
+    ##   llike_old <- llike_current
+    ##   Z_old <- Z_new
+    ##   succ_fixed_out <- succotash_unif_fixed(pi_Z, lambda, alpha, Y, a_seq, b_seq,
+    ##                                          sig_diag, print_ziter = print_ziter)
+    ##   pi_Z <- succ_fixed_out$pi_Z
+    ##   llike_current <- succ_fixed_out$llike_new
+    ##   eval_hess <- succ_fixed_out$eval_hess
+    ##   pi_new <- pi_Z[1:M]
+    ##   Z_new <- pi_Z[(M+1):length(pi_Z)]
+    ##   ldiff <- abs(llike_current / llike_old - 1)
+    ##   zdiff <- sum(abs(Z_old - Z_new))
+
+    ##   if(print_progress) {
+    ##     cat(" Iter =", em_index, "\n")
+    ##     cat("ldiff =", ldiff, "\n")
+    ##     cat("zdiff =", zdiff, "\n\n")
+    ##     par(mgp = c(1.5, 0.5, 0), mar = c(3, 3, 2, 0.5))
+    ##     if(!is.null(true_Z)) {
+    ##       par(mfrow = c(2,1))
+    ##       lm_Z <- lm(Z_new ~ true_Z)
+    ##       plot(true_Z, Z_new, xlab = "True Z", ylab = "Estimated Z")
+    ##       abline(lm_Z, lty = 2, col = 2)
+    ##       abline(0, 1)
+    ##       legend("bottomright", c("Y = X", "Regression Line"),
+    ##              lty = c(1,2), col = c(1,2))
+    ##     }
+    ##     plot(c(a_seq, 0, b_seq), pi_new, type = "h", ylab = expression(hat(pi)[k]),
+    ##          xlab = "a or b", ylim = c(0,max(c(0.5, pi_new))))
+    ##     mtext(side = 3, paste0("Iteration = ", em_index, ", llike = ",
+    ##                            round(llike_current), ", Min/Max Eigenvalue = ",
+    ##                            format(min(eval_hess), digits = 3), "/",
+    ##                            format(max(eval_hess), digits = 3)))
+    ##     par(mfrow = c(1,1))
+    ##   }
+    ##   em_index <- em_index + 1
+    ## }
 
     return(list(pi_new = pi_new, Z_new = Z_new, llike = llike_current))
 }

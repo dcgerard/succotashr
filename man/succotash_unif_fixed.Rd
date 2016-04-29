@@ -5,7 +5,8 @@
 \title{A fixed point iteration in the mixture of uniforms EM.}
 \usage{
 succotash_unif_fixed(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
-  print_ziter = TRUE, newt_itermax = 100, tol = 10^-4)
+  print_ziter = FALSE, newt_itermax = 100, tol = 10^-4,
+  var_scale = FALSE)
 }
 \arguments{
 \item{pi_Z}{A vector. The first \code{M} values are the current
@@ -27,8 +28,8 @@ endpoints of the mixing uniforms.}
 \item{b_seq}{A vector of positiv numerics containing the right
 endpoints of the mixing uniforms.}
 
-\item{sig_diag}{A vector of length \code{p} containing the variances
-of the observations.}
+\item{sig_diag}{A vector of length \code{p} containing the
+variances of the observations.}
 
 \item{print_ziter}{A logical. Should we we print each iteration of
 the Z optimization?}
@@ -38,6 +39,9 @@ steps to perform in updating \eqn{Z}.}
 
 \item{tol}{A positive numeric. The stopping criterion for Newton's
 method in updating Z.}
+
+\item{var_scale}{A logical. Should we update the scaling on the
+variances (\code{TRUE}) or not (\code{FALSE})}
 }
 \value{
 \code{pi_new} A vector of length \code{M}. The update for

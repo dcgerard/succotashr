@@ -12,7 +12,8 @@ License: GPL-3 | file LICENSE
 LazyData: TRUE
 Imports:
     SQUAREM (>= 2014.8-1),
-    ashr
+    ashr,
+    assertthat
 Suggests:
     cate (>= 1.0.4),
     testthat,

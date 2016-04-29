@@ -4,17 +4,18 @@
 \alias{uniform_succ_em}
 \title{EM algorithm for second step of SUCCOTASH}
 \usage{
-uniform_succ_em(pi_init, Z_init, a_seq, b_seq, lambda, alpha, Y, sig_diag,
-  print_ziter, print_progress, em_z_start_sd, em_itermax = 200,
+uniform_succ_em(Y, alpha, sig_diag, a_seq, b_seq, pi_init = NULL,
+  Z_init = NULL, lambda = NULL, print_ziter = FALSE,
+  print_progress = FALSE, em_z_start_sd = 1, em_itermax = 200,
   em_tol = 10^-6, pi_init_type = "random", true_Z = NULL)
 }
 \arguments{
-\item{pi_init}{A vector of non-negative numerics that sum of 1 of
-length \code{length(a) + length(b) + 1}. The initial values of
-the mixture probs.}
+\item{Y}{A p by 1 matrix of numerics. The data.}
 
-\item{Z_init}{A vector of length k of numerics. Starting values of
-Z.}
+\item{alpha}{A p by k matrix of numerics. The confounder
+coefficients.}
+
+\item{sig_diag}{A vector of the variances of \code{Y}.}
 
 \item{a_seq}{A vector of negative numerics in increasing order. The
 negative end points in an [a, 0] grid.}
@@ -22,15 +23,15 @@ negative end points in an [a, 0] grid.}
 \item{b_seq}{A vector of positive numerics in increasing order. The
 positive end points in a [0, b] grid.}
 
+\item{pi_init}{A vector of non-negative numerics that sum of 1 of
+length \code{length(a) + length(b) + 1}. The initial values of
+the mixture probs.}
+
+\item{Z_init}{A vector of length k of numerics. Starting values of
+Z.}
+
 \item{lambda}{A vector of numerics greater than or equal to 1, of
 length \code{length(a) + length(b) + 1}.}
-
-\item{alpha}{A p by k matrix of numerics. The confounder
-coefficients.}
-
-\item{Y}{A p by 1 matrix of numerics. The data.}
-
-\item{sig_diag}{A vector of the variances of \code{Y}.}
 
 \item{print_ziter}{A logical. Should we print the progress of the
 Newton iterations for updating Z?}

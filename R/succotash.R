@@ -406,6 +406,9 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
 #'     pi?
 #' @param var_scale A logical. Should we update the scaling on the
 #'     variances (\code{TRUE}) or not (\code{FALSE})
+#' @param post_inflate A positive numeric. The multiplicative amount
+#'     to inflate \code{scale_val} by after its MLE has been
+#'     found. Heuristically, I think this should be \eqn{n/(n - k)}.
 #'
 #' @return  \code{Z} A matrix  of dimension \code{k} by  \code{1}. The
 #'     estimates of the confounder covariates.
@@ -437,7 +440,7 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
                                   em_z_start_sd = 1,
                                   lambda_type = "zero_conc", lambda0 = 10,
                                   plot_new_ests = FALSE,
-                                  var_scale = FALSE) {
+                                  var_scale = FALSE, post_inflate = NULL) {
 
     ## @param em_pi_init_type How should we choose the initial values of
     ## \eqn{\pi}.  Possible values of \code{"random"},
@@ -488,6 +491,11 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
         }
     }
 
+    ## experimental post mle inflation
+    if (!is.null(post_inflate)) {
+        em_out$scale_val <- em_out$scale_val * post_inflate
+    }
+    
     sum_out <- succotash_summaries(Y = Y, Z = em_out$Z, pi_vals = em_out$pi_vals,
                                    alpha = alpha, sig_diag = sig_diag, tau_seq = em_out$tau_seq,
                                    scale_val = em_out$scale_val)
@@ -763,7 +771,8 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                                              tau_seq = tau_seq, em_pi_init = em_pi_init,
                                              plot_new_ests = plot_new_ests,
                                              em_itermax = em_itermax,
-                                             var_scale = var_scale)
+                                             var_scale = var_scale,
+                                             post_inflate = n / (n - ncol_x))
         } else if (mix_type == 'uniform') {
             suc_out <-
                 uniform_succ_given_alpha(Y = Y1_scaled, alpha = alpha_scaled,
