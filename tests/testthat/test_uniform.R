@@ -6,7 +6,6 @@ test_that("uniform_succotash_em will actually run", {
     p <- 7
     k <- 2
     m <- 11
-    lambda <- 10 ## nullpi weight
     scale_val <- 1
     pi_vals <- abs(rnorm(m))
     pi_vals <- pi_vals / sum(pi_vals)
@@ -37,7 +36,6 @@ test_that("succotash_unif_fixed will actually run",{
   set.seed(1200)
   p <- 7
   k <- 2
-  lambda = 10
   
   sig_diag <- abs(rnorm(p))
   Z <- matrix(rnorm(k))
@@ -49,6 +47,8 @@ test_that("succotash_unif_fixed will actually run",{
   pi_vals <- abs(rnorm(length(a_seq) + length(b_seq) + 1))
   pi_vals <- pi_vals / sum(pi_vals)
   pi_Z <- c(pi_vals, Z)
+
+  lambda <- rep(1, length = length(pi_vals))
   
   
   pzout <- succotash_unif_fixed(pi_Z = pi_Z, lambda = lambda, alpha = alpha, Y = Y,

@@ -5,7 +5,8 @@
 \title{Calculates the loglikelihood of the SUCCOTASH model under uniform
 mixtures.}
 \usage{
-succotash_llike_unif(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag)
+succotash_llike_unif(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
+  scale_val = 1)
 }
 \arguments{
 \item{pi_Z}{A vector. The first \code{M} values are the current
@@ -29,6 +30,9 @@ endpoints of the mixing uniforms.}
 
 \item{sig_diag}{A vector of length \code{p} containing the variances
 of the observations.}
+
+\item{scale_val}{A positive numeric. The amount to multiply the
+variance by.}
 }
 \description{
 Calculates the loglikelihood of the SUCCOTASH model under uniform

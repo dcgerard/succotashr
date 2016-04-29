@@ -216,12 +216,15 @@ succotash_unif_fixed <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
 #'     endpoints of the mixing uniforms.
 #'@param sig_diag A vector of length \code{p} containing the variances
 #'     of the observations.
+#'@param scale_val A positive numeric. The amount to multiply the
+#'     variance by.
 #'
 #'@seealso \code{\link{uniform_succ_given_alpha}}
 #'     \code{\link{succotash_unif_fixed}}.
 #'
 #' @export
-succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag) {
+succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
+                                 scale_val = 1) {
   M <- length(a_seq) + length(b_seq) + 1
   p <- nrow(Y)
   k <- length(pi_Z) - M
@@ -230,6 +233,13 @@ succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag)
     Z_current <- matrix(pi_Z[(M + 1):(M + k)], nrow = k)
   }
 
+  assertthat::are_equal(length(lambda), M)
+  assertthat::assert_that(all(lambda >= 1))
+  assertthat::assert_that(scale_val > 0)
+  assertthat::are_equal(sum(pi_current), 1, tol = 10 ^ -4)
+
+  sig_diag <- sig_diag * scale_val
+  
   az <- alpha %*% Z_current
 
   left_means <- diag(1 / sqrt(sig_diag)) %*% outer(c((Y - az)), a_seq, "-")
@@ -259,7 +269,16 @@ succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag)
 
   overall_fmat <- abs(cbind(pnorm_left_diff, zero_means, pnorm_right_diff))
 
-  llike_new <- sum(log(rowSums(overall_fmat %*% diag(pi_current))))
+  which_lambda <- lambda == 1
+  if (sum(which_lambda) > 0) {
+      prior_weight <- sum(log(pi_current[which_lambda]) *
+                          lambda[which_lambda])
+  } else {
+      prior_weight <- 0
+  }
+  
+  llike_new <- sum(log(rowSums(overall_fmat %*% diag(pi_current)))) +
+      prior_weight
 
   return(llike_new)
 }
