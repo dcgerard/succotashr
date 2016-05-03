@@ -17,7 +17,7 @@ for
 -   X an n by q matrix of of q covariates,
 -   B a q by p matrix of unobserved coefficients for the observed covariates,
 -   Z an n by k matrix of hidden confounders,
--   A an k by p matrix of hidden coefficients for the hidden confounders, and
+-   A a k by p matrix of hidden coefficients for the hidden confounders, and
 -   E an n by p matrix of independent normal errors with column variances s1,...,sp.
 
 Not accounting for the hidden covariates, Z, can reduce power and result in poor control of false discovery rate.

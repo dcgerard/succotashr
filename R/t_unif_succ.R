@@ -535,10 +535,10 @@ t_succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_dia
 
   az <- alpha %*% Z_current
 
-  left_means <- diag(1 / sqrt(sig_diag)) %*% outer(c((Y - az)), a_seq, "-")
-  left_means_zero <- diag(1 / sqrt(sig_diag)) %*% outer(c((Y - az)), rep(0, length(a_seq)), "-")
-  right_means <- diag(1 / sqrt(sig_diag)) %*% outer(c((Y - az)), b_seq, "-")
-  right_means_zero <- diag(1 / sqrt(sig_diag)) %*% outer(c((Y - az)), rep(0, length(b_seq)), "-")
+  left_means <- diag(1 / sqrt(sig_diag)) %*% outer(c( (Y - az)), a_seq, "-")
+  left_means_zero <- diag(1 / sqrt(sig_diag)) %*% outer(c( (Y - az)), rep(0, length(a_seq)), "-")
+  right_means <- diag(1 / sqrt(sig_diag)) %*% outer(c( (Y - az)), b_seq, "-")
+  right_means_zero <- diag(1 / sqrt(sig_diag)) %*% outer(c( (Y - az)), rep(0, length(b_seq)), "-")
   zero_means <- dnorm(Y, mean = az, sd = sqrt(sig_diag))
 
   left_ispos <- left_means > 0
@@ -570,6 +570,3 @@ t_succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_dia
 
   return(llike_new)
 }
-
-
-
