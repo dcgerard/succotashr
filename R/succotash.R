@@ -15,7 +15,7 @@
 #'   \code{Z_new} A vector of length \code{k}. The update for the confounder
 #'   covariates.
 succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
-                            plot_new_ests = FALSE, var_scale = FALSE) {
+                            plot_new_ests = FALSE, var_scale = FALSE, pen = 0) {
     M <- length(tau_seq)
     p <- nrow(Y)
     k <- length(pi_Z) - M - var_scale ## var_scale is 0 if FALSE, 1 if TRUE
@@ -70,7 +70,7 @@ succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
             Theta_diag <- colSums((T / t(var_mat)) / 2)
             Z_new <- solve(t(alpha) %*% (Theta_diag * alpha)) %*% t(Theta_diag * alpha) %*% Y
             resid_vec <- Y - alpha %*% Z_new
-            
+
             ## ## update scale_val with one Newton step
             ## grad_scale <- sum(t(c(resid_vec ^ 2 * sig_diag / 2) * t(T)) / t(var_mat ^ 2) -
             ##                   t(c(sig_diag / 2) * t(T)) / t(var_mat))
@@ -81,7 +81,7 @@ succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
             ## Update scale with Brent's method
             oout <- optim(par = scale_val_new, fn = fun_scale, T = T,
                           resid_vec = c(resid_vec), tau_seq = tau_seq,
-                          sig_diag = sig_diag,
+                          sig_diag = sig_diag, pen = pen,
                           method = "Brent", lower = 0, upper = 10,
                           control = list(fnscale = -1))
             scale_val_new <- oout$par
@@ -117,7 +117,7 @@ succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
 
 #' Objective function in intermediate step of EM algorithm when
 #' updating scale.
-#' 
+#'
 #' @param scale_val A positive numeric. The multiplicative factor to
 #'     sig_diag.
 #' @param T a matrix of numerics. K by p
@@ -126,11 +126,15 @@ succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
 #'     standard deviations, not variances.
 #' @param sig_diag A p-vector of positive numerics. The estimated
 #'     variances, not standard deviations.
-#' 
-fun_scale <- function(scale_val, T, resid_vec, tau_seq, sig_diag) {
+#' @param pen A numeric (usually positive) that adjusts the
+#'     variance. I think this should be the number of known
+#'     covariates, i.e. the number of columns in \code{X}.
+#'
+fun_scale <- function(scale_val, T, resid_vec, tau_seq, sig_diag, pen = 0) {
     var_mat <- outer(scale_val * sig_diag, tau_seq ^ 2, "+")
-    upper_vals <- t((resid_vec ^ 2) * t(T))
-    final_val <- -1 * (sum(upper_vals / t(var_mat)) / 2 + sum(T * log(t(var_mat))) / 2)
+    upper_vals <- t( (resid_vec ^ 2) * t(T))
+    final_val <- -1 * (sum(upper_vals / t(var_mat)) / 2 + sum(T * log(t(var_mat))) / 2) +
+        pen * log(scale_val)
     return(final_val)
 }
 
@@ -141,15 +145,15 @@ fun_scale <- function(scale_val, T, resid_vec, tau_seq, sig_diag) {
 #' regularized log-likelihood is currently not implemented.
 #'
 #' @inheritParams succotash_fixed
-#' 
-#' 
-#' 
+#'
+#'
+#'
 #' @export
 #'
 #' @return \code{llike_new} A numeric. The value of the SUCCOTASH
 #'   log-likelihood.
 succotash_llike <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag, plot_new_ests = FALSE,
-                            var_scale = FALSE) {
+                            var_scale = FALSE, pen = 0) {
     M <- length(tau_seq)
     p <- nrow(Y)
     k <- length(pi_Z) - M - var_scale
@@ -160,22 +164,31 @@ succotash_llike <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag, plot_new_
 
     if (var_scale) {
         scale_val <- pi_Z[M + k + 1] ## the amount to scale the variance by
+    } else {
+        scale_val <- 1
     }
-    
+
     if (!is.null(alpha)) {
         mean_mat <- matrix(rep(alpha %*% Z_current, M), ncol = M, nrow = p)
     } else {
         mean_mat <- matrix(0, ncol = M, nrow = p)
     }
-    if (!var_scale) {
-        var_mat <- outer(sig_diag, tau_seq ^ 2, "+")
-    } else {
-        var_mat <- outer(scale_val * sig_diag, tau_seq ^ 2, "+")
-    }
+
+    var_mat <- outer(scale_val * sig_diag, tau_seq ^ 2, "+")
+
     top_vals <- t(pi_current * t(dnorm(matrix(rep(Y, M), ncol = M, nrow = p), mean = mean_mat,
                                        sd = sqrt(var_mat))))
 
-    llike_new <- sum(log(rowSums(top_vals)))
+    ## which_lambda <- lambda == 1
+    ## if (sum(which_lambda) > 0) {
+    ##     prior_weight <- sum(log(pi_current[which_lambda]) *
+    ##                         lambda[which_lambda])
+    ## } else {
+    ##     prior_weight <- 0
+    ## }
+
+    llike_new <- sum(log(rowSums(top_vals))) + pen * log(scale_val)
+    ## + prior_weight
     return(llike_new)
 }
 
@@ -240,7 +253,7 @@ succotash_llike <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag, plot_new_
 succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lambda = NULL,
                          Z_init = NULL, itermax = 1500, tol = 10 ^ -6, z_start_sd = 1,
                          print_note = FALSE, pi_init_type = "random", lambda_type = "zero_conc",
-                         lambda0 = 10, plot_new_ests = FALSE, var_scale = FALSE) {
+                         lambda0 = 10, plot_new_ests = FALSE, var_scale = FALSE, pen = 0) {
     if (print_note) {
         cat("Working on EM.\n")
     }
@@ -318,14 +331,15 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
                               alpha = alpha, Y = Y, tau_seq = tau_seq,
                               sig_diag = sig_diag,
                               plot_new_ests = plot_new_ests,
-                              var_scale = var_scale,
+                              var_scale = var_scale, pen = pen,
                               fixptfn = succotash_fixed,
                               objfn = succotash_llike,
                               control = list(maxiter = itermax, tol = tol))
                               ## from the SQUAREM package
 
     llike <- succotash_llike(pi_Z = sq_out$par, lambda = lambda, alpha = alpha, Y = Y,
-                             tau_seq = tau_seq, sig_diag = sig_diag, var_scale = var_scale)
+                             tau_seq = tau_seq, sig_diag = sig_diag, var_scale = var_scale,
+                             pen = pen)
 
     pi_vals <- sq_out$par[1:M]
     if (k != 0) {
@@ -406,9 +420,9 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
 #'     pi?
 #' @param var_scale A logical. Should we update the scaling on the
 #'     variances (\code{TRUE}) or not (\code{FALSE})
-#' @param post_inflate A positive numeric. The multiplicative amount
-#'     to inflate \code{scale_val} by after its MLE has been
-#'     found. Heuristically, I think this should be \eqn{n/(n - k)}.
+#' @param pen A numeric (usually positive). The correction term for
+#'     the scaling factor. I think this should be the number of known
+#'     covariates, i.e. the number of columns of \code{X}.
 #'
 #' @return  \code{Z} A matrix  of dimension \code{k} by  \code{1}. The
 #'     estimates of the confounder covariates.
@@ -440,7 +454,7 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
                                   em_z_start_sd = 1,
                                   lambda_type = "zero_conc", lambda0 = 10,
                                   plot_new_ests = FALSE,
-                                  var_scale = FALSE, post_inflate = NULL) {
+                                  var_scale = FALSE, pen = 0) {
 
     ## @param em_pi_init_type How should we choose the initial values of
     ## \eqn{\pi}.  Possible values of \code{"random"},
@@ -461,7 +475,8 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
                            lambda_type = lambda_type,
                            lambda0 = lambda0,
                            plot_new_ests = plot_new_ests,
-                           var_scale = var_scale)
+                           var_scale = var_scale,
+                           pen = pen)
 
     if(num_em_runs > 1) {
         for (index in 2:num_em_runs) {
@@ -475,7 +490,8 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
                                    lambda_type = lambda_type,
                                    lambda0 = lambda0,
                                    plot_new_ests = plot_new_ests,
-                                   var_scale = var_scale)
+                                   var_scale = var_scale,
+                                   pen = pen)
             pi_diff <- sum(abs(em_new$pi_vals - em_out$pi_vals))
             z_diff <- sum(abs(em_new$Z - em_out$Z))
             if (em_out$llike < em_new$llike) {
@@ -491,11 +507,6 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
         }
     }
 
-    ## experimental post mle inflation
-    if (!is.null(post_inflate)) {
-        em_out$scale_val <- em_out$scale_val * post_inflate
-    }
-    
     sum_out <- succotash_summaries(Y = Y, Z = em_out$Z, pi_vals = em_out$pi_vals,
                                    alpha = alpha, sig_diag = sig_diag, tau_seq = em_out$tau_seq,
                                    scale_val = em_out$scale_val)
@@ -644,7 +655,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                                     "homoPCA", "pca_shrinkvar", "mod_fa",
                                     "flash_hetero", "non_homo", "non_hetero",
                                     "non_shrinkvar"),
-                      lambda_type = "zero_conc", mix_type = 'normal',
+                      lambda_type = "zero_conc", mix_type = "normal",
                       likelihood = c("normal", "t"), lambda0 = 10,
                       tau_seq = NULL, em_pi_init = NULL,
                       plot_new_ests = FALSE, em_itermax = 200,
@@ -709,7 +720,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
         L_mat <- matrix(NA, nrow = nrow(Y_current), ncol = k)
         F_mat <- matrix(NA, nrow = ncol(Y_current), ncol = k)
         var_vec <- rep(NA, length = k)
-        for(conf_index in 1:k) {
+        for (conf_index in 1:k) {
             flash_out <- flash::flash(Y_current)
             Y_current <- Y_current - flash_out$l %*% t(flash_out$f)
             L_mat[, conf_index] <- flash_out$l
@@ -763,7 +774,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
 
     ## Fit succotash ---------------------------------------------------------
     if (likelihood == "normal") {
-        if (mix_type == 'normal') {
+        if (mix_type == "normal") {
             suc_out <- succotash_given_alpha(Y = Y1_scaled, alpha = alpha_scaled,
                                              sig_diag = sig_diag_scaled,
                                              num_em_runs = num_em_runs, em_z_start_sd = z_start_sd,
@@ -772,8 +783,9 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                                              plot_new_ests = plot_new_ests,
                                              em_itermax = em_itermax,
                                              var_scale = var_scale,
-                                             post_inflate = n / (n - ncol_x))
-        } else if (mix_type == 'uniform') {
+                                             pen = ncol_x + k)
+            ## Penalty is number of covariates + number of hidden confounders.
+        } else if (mix_type == "uniform") {
             suc_out <-
                 uniform_succ_given_alpha(Y = Y1_scaled, alpha = alpha_scaled,
                                          sig_diag = sig_diag_scaled, num_em_runs = num_em_runs,

@@ -5,7 +5,7 @@
 \title{A fixed point iteration in the mixture of uniforms EM.}
 \usage{
 succotash_unif_fixed(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
-  print_ziter = FALSE, newt_itermax = 100, tol = 10^-4,
+  print_ziter = FALSE, newt_itermax = 10, tol = 10^-4,
   var_scale = FALSE)
 }
 \arguments{

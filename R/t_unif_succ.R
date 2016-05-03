@@ -51,14 +51,13 @@ t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 2,
                                        print_ziter = FALSE,
                                        true_Z = NULL) {
     p <- nrow(Y)
-    k <- ncol(alpha)
+    ## k <- ncol(alpha)
 
     ## set up grid
-    if(is.null(a_seq))
-    {
-        a_max <- 2 * sqrt(max(Y^2 - sig_diag))
+    if(is.null(a_seq)) {
+        a_max <- 2 * sqrt(max(Y ^ 2 - sig_diag))
         a_min <- sqrt(min(sig_diag)) / 10
-        if(a_max < 0) {
+        if (a_max < 0) {
             a_max <- 8 * a_min
         }
         a_current <- a_min
@@ -70,11 +69,10 @@ t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 2,
         }
         a_seq <- sort(-1 * a_seq)
     }
-    if(is.null(b_seq))
-    {
-        b_max <- 2 * sqrt(max(Y^2 - sig_diag))
+    if (is.null(b_seq)) {
+        b_max <- 2 * sqrt(max(Y ^ 2 - sig_diag))
         b_min <- sqrt(min(sig_diag)) / 10
-        if(b_max < 0) {
+        if (b_max < 0) {
             b_max <- 8 * b_min
         }
         b_current <- b_min
@@ -89,9 +87,9 @@ t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 2,
     M <- length(a_seq) + length(b_seq) + 1
 
     if (is.null(lambda)) {
-        if (lambda_type == 'unif') {
+        if (lambda_type == "unif") {
             lambda <- rep(1, M)
-        } else if (lambda_type == 'zero_conc') {
+        } else if (lambda_type == "zero_conc") {
             lambda <- c(rep(1, length = length(a_seq)), 10, rep(1, length = length(b_seq)))
         }
     }
@@ -128,7 +126,7 @@ t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 2,
             Z_new <- em_out$Z_new
             llike_new <- em_out$llike
 
-            if(llike_new > llike_current) {
+            if (llike_new > llike_current) {
                 pi_current <- pi_new
                 Z_current <- Z_new
                 llike_current <- llike_new
@@ -150,13 +148,13 @@ t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 2,
 
     pi0 <- pi_current[length(a_seq) + 1]
 
-    NegativeProb = rep(0, length = p)
+    NegativeProb <- rep(0, length = p)
     NegativeProb <-
       ashr::cdf_post(mix_fit, 0,
                      betahat = c(Y - az),
                      sebetahat = sqrt(sig_diag), v = rep(nu, p)) -
       lfdr
-    lfsr = ifelse(NegativeProb > 0.5 * (1 - lfdr), 1 - NegativeProb,
+    lfsr <- ifelse(NegativeProb > 0.5 * (1 - lfdr), 1 - NegativeProb,
                   NegativeProb + lfdr)
 
     return(list(Z = Z_current, pi_vals = pi_current, a_seq = a_seq, b_seq = b_seq,
@@ -171,7 +169,7 @@ t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 2,
 #'
 #'
 t_unif_em <- function(a_seq, b_seq, Y, alpha, sig_diag, nu, pi_init, Z_init, pi_init_type, lambda,
-                      print_progress, print_ziter, em_z_start_sd, true_Z = NULL, em_tol = 10^-6, em_itermax = 200) {
+                      print_progress, print_ziter, em_z_start_sd, true_Z = NULL, em_tol = 10 ^ -6, em_itermax = 200) {
 
     M <- length(a_seq) + length(b_seq) + 1 ## plus 1 for pointmass at 0
 
@@ -226,7 +224,7 @@ t_unif_em <- function(a_seq, b_seq, Y, alpha, sig_diag, nu, pi_init, Z_init, pi_
                                                  sig_diag = sig_diag, print_ziter = print_ziter)
         pi_Z <- succ_fixed_out$pi_Z
         pi_new <- pi_Z[1:M]
-        Z_new <- pi_Z[(M+1):length(pi_Z)]
+        Z_new <- pi_Z[(M + 1):length(pi_Z)]
 
         llike_current <- t_succotash_llike_unif(pi_Z = pi_Z, lambda = lambda, alpha = alpha,
                                                 Y = Y, a_seq = a_seq, b_seq = b_seq,
@@ -303,9 +301,9 @@ t_unif_em <- function(a_seq, b_seq, Y, alpha, sig_diag, nu, pi_init, Z_init, pi_
 #'
 #' @export
 t_succotash_unif_fixed <- function(pi_Z, lambda, alpha, Y, nu, a_seq, b_seq, sig_diag,
-                                 print_ziter = TRUE, newt_itermax = 10, tol = 10^-4) {
+                                 print_ziter = TRUE, newt_itermax = 10, tol = 10 ^ -4) {
   M <- length(a_seq) + length(b_seq) + 1
-  p <- nrow(Y)
+  ##p <- nrow(Y)
   k <- length(pi_Z) - M
   pi_old <- pi_Z[1:M]
   if (k != 0) {
@@ -528,7 +526,7 @@ tgrad <- function(Z_old, sig_diag, Y, alpha, Tkj, a_seq, b_seq, nu) {
 #'@export
 t_succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag, nu) {
   M <- length(a_seq) + length(b_seq) + 1
-  p <- nrow(Y)
+  ## p <- nrow(Y)
   k <- length(pi_Z) - M
   pi_current <- pi_Z[1:M]
   if (k != 0) {

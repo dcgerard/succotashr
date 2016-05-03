@@ -230,11 +230,10 @@ pca_shrinkvar <- function(Y, k, df = "rank_based") {
 #'
 #' @param Y A matrix of numerics. The data.
 #' @param r the rank.
-pca_naive <- function (Y, r) 
-{
+pca_naive <- function (Y, r) {
     svd_Y <- svd(Y)
-    Gamma <- svd_Y$v[, 1:r] %*% diag(svd_Y$d[1:r], r, r)/sqrt(nrow(Y))
+    Gamma <- svd_Y$v[, 1:r] %*% diag(svd_Y$d[1:r], r, r) / sqrt(nrow(Y))
     Z <- sqrt(nrow(Y)) * svd_Y$u[, 1:r]
-    Sigma <- apply(Y - Z %*% t(Gamma), 2, function(x) mean(x^2))
+    Sigma <- apply(Y - Z %*% t(Gamma), 2, function(x) mean(x ^ 2))
     return(list(Gamma = Gamma, Z = Z, Sigma = Sigma))
 }

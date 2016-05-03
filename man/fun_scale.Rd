@@ -5,7 +5,7 @@
 \title{Objective function in intermediate step of EM algorithm when
 updating scale.}
 \usage{
-fun_scale(scale_val, T, resid_vec, tau_seq, sig_diag)
+fun_scale(scale_val, T, resid_vec, tau_seq, sig_diag, pen = 0)
 }
 \arguments{
 \item{scale_val}{A positive numeric. The multiplicative factor to
@@ -20,6 +20,10 @@ standard deviations, not variances.}
 
 \item{sig_diag}{A p-vector of positive numerics. The estimated
 variances, not standard deviations.}
+
+\item{pen}{A numeric (usually positive) that adjusts the
+variance. I think this should be the number of known
+covariates, i.e. the number of columns in \code{X}.}
 }
 \description{
 Objective function in intermediate step of EM algorithm when

@@ -8,7 +8,7 @@ succotash_em(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL,
   lambda = NULL, Z_init = NULL, itermax = 1500, tol = 10^-6,
   z_start_sd = 1, print_note = FALSE, pi_init_type = "random",
   lambda_type = "zero_conc", lambda0 = 10, plot_new_ests = FALSE,
-  var_scale = FALSE)
+  var_scale = FALSE, pen = 0)
 }
 \arguments{
 \item{Y}{A matrix of dimension \code{p} by \code{1}. These are the
@@ -76,6 +76,10 @@ pi?}
 
 \item{var_scale}{A logical. Should we update the scaling on the
 variances (\code{TRUE}) or not (\code{FALSE})}
+
+\item{pen}{A numeric (usually positive). The correction term for
+the scaling factor. I think this should be the number of known
+covariates, i.e. the number of columns of \code{X}.}
 }
 \value{
 \code{pi_vals} A vector of length \code{M}. The estimates

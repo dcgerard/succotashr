@@ -22,8 +22,9 @@ test_that("uniform_succotash_em will actually run", {
     a_seq <- -4:-1
     b_seq <- 1:4
     
-    pzout <- uniform_succ_em(Y = Y, alpha = alpha, sig_diag = sig_diag, a_seq = a_seq,
-                             b_seq = b_seq)
+    pzout <- uniform_succ_em(Y = Y, alpha = alpha,
+                             sig_diag = sig_diag, a_seq = a_seq,
+                             b_seq = b_seq, print_ziter = TRUE)
     
     expect_true(all(pzout$pi_new > 0))
     expect_true(all(pzout$pi_new < 1))
@@ -58,3 +59,5 @@ test_that("succotash_unif_fixed will actually run",{
   expect_true(all(pzout[1:length(pi_vals)] > 0))
 }
 )
+
+
