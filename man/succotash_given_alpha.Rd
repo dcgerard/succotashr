@@ -9,7 +9,7 @@ succotash_given_alpha(Y, alpha, sig_diag, num_em_runs = 2,
   print_steps = FALSE, tau_seq = NULL, em_pi_init = NULL, lambda = NULL,
   em_Z_init = NULL, em_itermax = 500, em_tol = 10^-6, em_z_start_sd = 1,
   lambda_type = "zero_conc", lambda0 = 10, plot_new_ests = FALSE,
-  var_scale = FALSE, pen = 0)
+  var_scale = TRUE, pen = 0)
 }
 \arguments{
 \item{Y}{A matrix of dimension \code{p} by \code{1}. These are the
@@ -71,9 +71,9 @@ pi?}
 \item{var_scale}{A logical. Should we update the scaling on the
 variances (\code{TRUE}) or not (\code{FALSE})}
 
-\item{pen}{A numeric (usually positive). The correction term for
-the scaling factor. I think this should be the number of known
-covariates, i.e. the number of columns of \code{X}.}
+\item{pen}{Defunct. A numeric (usually positive). The correction
+term for the scaling factor. This doesn't work too well so may
+be removed at any time.}
 }
 \value{
 \code{Z} A matrix  of dimension \code{k} by  \code{1}. The

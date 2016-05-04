@@ -3,7 +3,7 @@ context("fixed point iteration of scaling variance")
 library(succotashr)
 context("var_scale tests")
 
-test_that("succotash_fixed will actually run with var_scale = TRUE",{
+test_that("succotash_fixed will actually run with var_scale = TRUE", {
     set.seed(1200)
     p <- 7
     k <- 2
@@ -35,7 +35,7 @@ test_that("succotash_fixed will actually run with var_scale = TRUE",{
 )
 
 
-test_that("succotash_em will actually run with var_scale = TRUE",{
+test_that("succotash_em will actually run with var_scale = TRUE", {
     set.seed(10)
     p <- 7
     k <- 2
@@ -60,7 +60,7 @@ test_that("succotash_em will actually run with var_scale = TRUE",{
 )
 
 
-test_that("succotash_given_alpha will actually run with var_scale = TRUE",{
+test_that("succotash_given_alpha will actually run with var_scale = TRUE", {
     set.seed(12)
     p <- 7
     k <- 2
@@ -80,5 +80,35 @@ test_that("succotash_given_alpha will actually run with var_scale = TRUE",{
 
     pzout <- succotash_given_alpha(Y, alpha, sig_diag, var_scale = TRUE)
 
+}
+)
+
+
+test_that("two-step actually works", {
+    set.seed(888)
+    p <- 10
+    n <- 5
+    k <- 1
+    q <- 2
+    pi_vals <- c(0.5, 0.3, 0.2)
+    tau_seq <- c(0, 1, 2)
+
+    beta0 <- matrix(rnorm((q - 1) * p), nrow = q - 1)
+    beta1 <- draw_beta(pi_vals = pi_vals, tau_seq = tau_seq, p = p)
+    beta  <- rbind(beta0, beta1)
+    X     <- matrix(rnorm(n * q), nrow = n)
+    Z     <- matrix(rnorm(n * k), nrow = n)
+    alpha <- matrix(rnorm(k * p), nrow = k)
+    E     <- matrix(rnorm(n * p), nrow = n)
+    Y     <- X %*% beta + Z %*% alpha + E
+
+    suc0 <- succotash(Y = Y, X = X, k = k, two_step = FALSE)
+    new_scale <- suc0$scale_val * n / (n - k - q)
+    suc1 <- succotash(Y = Y, X = X, k = k, two_step = FALSE, inflate_var = new_scale)
+    suc2 <- succotash(Y = Y, X = X, k = k, two_step = TRUE)
+
+    expect_equal(suc0$sig_diag_scaled * suc0$scale_val * n / (n - k - q),
+                 suc1$sig_diag_scaled)
+    expect_equal(suc1$sig_diag_scaled, suc2$sig_diag_scaled)
 }
 )

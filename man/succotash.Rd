@@ -6,12 +6,12 @@
 SHrinkage.}
 \usage{
 succotash(Y, X, k, sig_reg = 0.01, num_em_runs = 2, z_start_sd = 1,
-  fa_method = c("reg_mle", "quasi_mle", "pca", "flash", "homoPCA",
-  "pca_shrinkvar", "mod_fa", "flash_hetero", "non_homo", "non_hetero",
-  "non_shrinkvar"), lambda_type = "zero_conc", mix_type = "normal",
-  likelihood = c("normal", "t"), lambda0 = 10, tau_seq = NULL,
-  em_pi_init = NULL, plot_new_ests = FALSE, em_itermax = 200,
-  var_scale = FALSE, inflate_var = 1)
+  two_step = TRUE, fa_method = c("pca", "reg_mle", "quasi_mle", "flash",
+  "homoPCA", "pca_shrinkvar", "mod_fa", "flash_hetero", "non_homo",
+  "non_hetero", "non_shrinkvar"), lambda_type = "zero_conc",
+  mix_type = "normal", likelihood = c("normal", "t"), lambda0 = 10,
+  tau_seq = NULL, em_pi_init = NULL, plot_new_ests = FALSE,
+  em_itermax = 200, var_scale = TRUE, inflate_var = 1, pen = 0)
 }
 \arguments{
 \item{Y}{An \code{n} by \code{p} matrix of response variables.}
@@ -32,6 +32,10 @@ the EM algorithm.}
 \item{z_start_sd}{A positive numeric. At the beginning of each EM
 algorithm, \code{Z} is initiated with independent mean zero
 normals with standard deviation \code{z_start_sd}.}
+
+\item{two_step}{A logical. Should we run the two-step SUCCOTASH
+procedure of inflating the variance (\code{TRUE}) or not
+(\code{FALSE})? Defaults to \code{TRUE}.}
 
 \item{fa_method}{Which factor analysis method should we use? The
 regularized MLE implemented in \code{\link{factor_mle}}
@@ -78,12 +82,16 @@ iterations to run during the EM algorithm.}
 
 \item{var_scale}{A logical. Should we update the scaling on the
 variances (\code{TRUE}) or not (\code{FALSE}). Only works for
-the normal mixtures case right now.}
+the normal mixtures case right now. Defaults to \code{TRUE}.}
 
 \item{inflate_var}{A positive numeric. The multiplicative amount to
 inflate the variance estimates by. There is no theoretical
 justification for it to be anything but 1, but I have it in
 here to play around with it.}
+
+\item{pen}{Now defunct. A numeric. The amount to penalize
+by. Defaults to zero. This doesn't work too well and may be
+removed at any time.}
 }
 \value{
 See \code{\link{succotash_given_alpha}} for details of output.

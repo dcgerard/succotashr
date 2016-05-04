@@ -15,7 +15,7 @@
 #'   \code{Z_new} A vector of length \code{k}. The update for the confounder
 #'   covariates.
 succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
-                            plot_new_ests = FALSE, var_scale = FALSE, pen = 0) {
+                            plot_new_ests = FALSE, var_scale = TRUE, pen = 0) {
     M <- length(tau_seq)
     p <- nrow(Y)
     k <- length(pi_Z) - M - var_scale ## var_scale is 0 if FALSE, 1 if TRUE
@@ -153,7 +153,7 @@ fun_scale <- function(scale_val, T, resid_vec, tau_seq, sig_diag, pen = 0) {
 #' @return \code{llike_new} A numeric. The value of the SUCCOTASH
 #'   log-likelihood.
 succotash_llike <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag, plot_new_ests = FALSE,
-                            var_scale = FALSE, pen = 0) {
+                            var_scale = TRUE, pen = 0) {
     M <- length(tau_seq)
     p <- nrow(Y)
     k <- length(pi_Z) - M - var_scale
@@ -253,7 +253,7 @@ succotash_llike <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag, plot_new_
 succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lambda = NULL,
                          Z_init = NULL, itermax = 1500, tol = 10 ^ -6, z_start_sd = 1,
                          print_note = FALSE, pi_init_type = "random", lambda_type = "zero_conc",
-                         lambda0 = 10, plot_new_ests = FALSE, var_scale = FALSE, pen = 0) {
+                         lambda0 = 10, plot_new_ests = FALSE, var_scale = TRUE, pen = 0) {
     if (print_note) {
         cat("Working on EM.\n")
     }
@@ -420,9 +420,9 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
 #'     pi?
 #' @param var_scale A logical. Should we update the scaling on the
 #'     variances (\code{TRUE}) or not (\code{FALSE})
-#' @param pen A numeric (usually positive). The correction term for
-#'     the scaling factor. I think this should be the number of known
-#'     covariates, i.e. the number of columns of \code{X}.
+#' @param pen Defunct. A numeric (usually positive). The correction
+#'     term for the scaling factor. This doesn't work too well so may
+#'     be removed at any time.
 #'
 #' @return  \code{Z} A matrix  of dimension \code{k} by  \code{1}. The
 #'     estimates of the confounder covariates.
@@ -454,7 +454,7 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
                                   em_z_start_sd = 1,
                                   lambda_type = "zero_conc", lambda0 = 10,
                                   plot_new_ests = FALSE,
-                                  var_scale = FALSE, pen = 0) {
+                                  var_scale = TRUE, pen = 0) {
 
     ## @param em_pi_init_type How should we choose the initial values of
     ## \eqn{\pi}.  Possible values of \code{"random"},
@@ -608,7 +608,14 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
 #'     here to play around with it.
 #' @param var_scale A logical. Should we update the scaling on the
 #'     variances (\code{TRUE}) or not (\code{FALSE}). Only works for
-#'     the normal mixtures case right now.
+#'     the normal mixtures case right now. Defaults to \code{TRUE}.
+#' @param pen Now defunct. A numeric. The amount to penalize
+#'     by. Defaults to zero. This doesn't work too well and may be
+#'     removed at any time.
+#' @param two_step A logical. Should we run the two-step SUCCOTASH
+#'     procedure of inflating the variance (\code{TRUE}) or not
+#'     (\code{FALSE})? Defaults to \code{TRUE}.
+#'
 #'
 #' @return See \code{\link{succotash_given_alpha}} for details of output.
 #'
@@ -650,8 +657,8 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
 #'
 #'
 succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
-                      z_start_sd = 1,
-                      fa_method = c("reg_mle", "quasi_mle", "pca", "flash",
+                      z_start_sd = 1, two_step = TRUE,
+                      fa_method = c("pca", "reg_mle", "quasi_mle", "flash",
                                     "homoPCA", "pca_shrinkvar", "mod_fa",
                                     "flash_hetero", "non_homo", "non_hetero",
                                     "non_shrinkvar"),
@@ -659,10 +666,10 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                       likelihood = c("normal", "t"), lambda0 = 10,
                       tau_seq = NULL, em_pi_init = NULL,
                       plot_new_ests = FALSE, em_itermax = 200,
-                      var_scale = FALSE, inflate_var = 1) {
+                      var_scale = TRUE, inflate_var = 1, pen = 0) {
     ncol_x <- ncol(X)
 
-    fa_method <- match.arg(fa_method, c("reg_mle", "quasi_mle", "pca",
+    fa_method <- match.arg(fa_method, c("pca", "reg_mle", "quasi_mle",
                                         "flash", "homoPCA",
                                         "pca_shrinkvar", "mod_fa",
                                         "flash_hetero", "non_homo",
@@ -676,13 +683,15 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
     Y_tilde <- crossprod(Q, Y)[ncol_x:nrow(Y), ]  # discard first q-1 rows.
 
 
-    n <- nrow(Y_tilde)
+    n <- nrow(Y_tilde) ## NOT the total number of observations, but
+                       ## the total number of observations minus the
+                       ## number of covariates we control for.
 
 
     ## Factor Analysis Methods -----------------------------------------------
     if (k == 0 | fa_method == "non_homo" | fa_method == "non_hetero" | fa_method == "non_shrinkvar") {
         k <- 0
-        if(fa_method == "non_homo") {
+        if (fa_method == "non_homo") {
             Y_current <- Y_tilde[2:n, ]
             sig_diag <- rep(mean(Y_current ^ 2), ncol(Y_current))
             alpha <- NULL
@@ -710,7 +719,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
         alpha <- svd(mle_out$A, nv = k, nu = 0)$v
         sig_diag <- mle_out$sig_diag
         nu <- n - 1
-    } else if (fa_method == "pca" & requireNamespace("cate", quietly = TRUE)) {
+    } else if (fa_method == "pca") {
         pca_out <- pca_naive(Y = Y_tilde[2:n, ], r = k)
         alpha <- pca_out$Gamma
         sig_diag <- pca_out$Sigma
@@ -775,16 +784,32 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
     ## Fit succotash ---------------------------------------------------------
     if (likelihood == "normal") {
         if (mix_type == "normal") {
-            suc_out <- succotash_given_alpha(Y = Y1_scaled, alpha = alpha_scaled,
-                                             sig_diag = sig_diag_scaled,
-                                             num_em_runs = num_em_runs, em_z_start_sd = z_start_sd,
-                                             lambda_type = lambda_type, lambda0 = lambda0,
-                                             tau_seq = tau_seq, em_pi_init = em_pi_init,
-                                             plot_new_ests = plot_new_ests,
-                                             em_itermax = em_itermax,
-                                             var_scale = var_scale,
-                                             pen = ncol_x + k)
-            ## Penalty is number of covariates + number of hidden confounders.
+            suc_out_bland <- succotash_given_alpha(Y = Y1_scaled, alpha = alpha_scaled,
+                                                   sig_diag = sig_diag_scaled,
+                                                   num_em_runs = num_em_runs,
+                                                   em_z_start_sd = z_start_sd,
+                                                   lambda_type = lambda_type, lambda0 = lambda0,
+                                                   tau_seq = tau_seq, em_pi_init = em_pi_init,
+                                                   plot_new_ests = plot_new_ests,
+                                                   em_itermax = em_itermax,
+                                                   var_scale = var_scale,
+                                                   pen = pen)
+            if (two_step) {
+                new_scale <- suc_out_bland$scale_val * nrow(X) / (nrow(X) - k - ncol_x)
+                sig_diag_scaled <- sig_diag_scaled * new_scale # inflate variance
+                suc_out <- succotash_given_alpha(Y = Y1_scaled, alpha = alpha_scaled,
+                                                 sig_diag = sig_diag_scaled,
+                                                 num_em_runs = num_em_runs,
+                                                 em_z_start_sd = z_start_sd,
+                                                 lambda_type = lambda_type, lambda0 = lambda0,
+                                                 tau_seq = tau_seq, em_pi_init = em_pi_init,
+                                                 plot_new_ests = plot_new_ests,
+                                                 em_itermax = em_itermax,
+                                                 var_scale = FALSE, # assume scale known now.
+                                                 pen = 0)
+            } else {
+                suc_out <- suc_out_bland
+            }
         } else if (mix_type == "uniform") {
             suc_out <-
                 uniform_succ_given_alpha(Y = Y1_scaled, alpha = alpha_scaled,
