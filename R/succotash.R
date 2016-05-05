@@ -807,6 +807,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                                                  em_itermax = em_itermax,
                                                  var_scale = FALSE, # assume scale known now.
                                                  pen = 0)
+                suc_out$scale_val <- new_scale
             } else {
                 suc_out <- suc_out_bland
             }
