@@ -592,7 +592,8 @@ uniform_succ_given_alpha <-
                                       em_tol = em_tol,
                                       pi_init_type = "random",
                                       em_z_start_sd = em_z_start_sd,
-                                      true_Z = true_Z, var_scale = var_scale)
+                                      true_Z = true_Z, var_scale = var_scale,
+                                      optmethod = optmethod)
             if (em_new$llike > em_out$llike) {
                 em_out <- em_new
             }
