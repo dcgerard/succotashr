@@ -21,7 +21,7 @@ test_that("succotash_fixed will actually run with var_scale = TRUE", {
     alpha <- matrix(rnorm(p * k), nrow = p)
     Y <- 2 * rnorm(p) + alpha %*% Z
 
-        pzout <- succotash_fixed(pi_Z = pi_Z, lambda = lambda, alpha = alpha, Y = Y,
+    pzout <- succotash_fixed(pi_Z = pi_Z, lambda = lambda, alpha = alpha, Y = Y,
                              tau_seq = tau_seq, sig_diag = sig_diag, plot_new_ests = plot_new_ests,
                              var_scale = TRUE)
     expect_equal(length(pzout), m + k + 1)
@@ -86,7 +86,7 @@ test_that("succotash_given_alpha will actually run with var_scale = TRUE", {
 
 test_that("two-step actually works", {
     set.seed(888)
-    p <- 10
+    p <- 11
     n <- 5
     k <- 1
     q <- 2
@@ -102,13 +102,14 @@ test_that("two-step actually works", {
     E     <- matrix(rnorm(n * p), nrow = n)
     Y     <- X %*% beta + Z %*% alpha + E
 
-    suc0 <- succotash(Y = Y, X = X, k = k, two_step = FALSE)
+    suc0 <- succotash(Y = Y, X = X, k = k, two_step = FALSE, var_scale = TRUE)
     new_scale <- suc0$scale_val * n / (n - k - q)
-    suc1 <- succotash(Y = Y, X = X, k = k, two_step = FALSE, inflate_var = new_scale)
-    suc2 <- succotash(Y = Y, X = X, k = k, two_step = TRUE)
+    suc1 <- succotash(Y = Y, X = X, k = k, two_step = FALSE, inflate_var = new_scale,
+                      var_scale = FALSE)
+    suc2 <- succotash(Y = Y, X = X, k = k, two_step = TRUE, var_scale = TRUE)
 
-    expect_equal(suc0$sig_diag_scaled * suc0$scale_val * n / (n - k - q),
+    expect_equal(suc0$sig_diag_scaled * n / (n - k - q),
                  suc1$sig_diag_scaled)
-    expect_equal(suc1$sig_diag_scaled, suc2$sig_diag_scaled)
+    expect_equal(suc1$sig_diag_scaled, suc2$sig_diag_scaled, tol = 10^-4)
 }
 )

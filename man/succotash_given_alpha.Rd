@@ -69,7 +69,7 @@ available. If \code{lambda_type} is \code{"zero_conc"}, then
 pi?}
 
 \item{var_scale}{A logical. Should we update the scaling on the
-variances (\code{TRUE}) or not (\code{FALSE})}
+variances (\code{TRUE}) or not (\code{FALSE}).}
 
 \item{pen}{Defunct. A numeric (usually positive). The correction
 term for the scaling factor. This doesn't work too well so may

@@ -21,9 +21,8 @@ standard deviations, not variances.}
 \item{sig_diag}{A p-vector of positive numerics. The estimated
 variances, not standard deviations.}
 
-\item{pen}{A numeric (usually positive) that adjusts the
-variance. I think this should be the number of known
-covariates, i.e. the number of columns in \code{X}.}
+\item{pen}{Now defunct. A numeric (usually positive) that adjusts the
+variance. Doesn't work too well, so may be removed at any time.}
 }
 \description{
 Objective function in intermediate step of EM algorithm when

@@ -5,8 +5,7 @@
 \title{A fixed point iteration in the mixture of uniforms EM.}
 \usage{
 succotash_unif_fixed(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
-  print_ziter = FALSE, newt_itermax = 10, tol = 10^-4,
-  var_scale = FALSE)
+  print_ziter = FALSE, newt_itermax = 4, tol = 10^-4, var_scale = TRUE)
 }
 \arguments{
 \item{pi_Z}{A vector. The first \code{M} values are the current
@@ -41,7 +40,7 @@ steps to perform in updating \eqn{Z}.}
 method in updating Z.}
 
 \item{var_scale}{A logical. Should we update the scaling on the
-variances (\code{TRUE}) or not (\code{FALSE})}
+variances (\code{TRUE}) or not (\code{FALSE}).}
 }
 \value{
 \code{pi_new} A vector of length \code{M}. The update for

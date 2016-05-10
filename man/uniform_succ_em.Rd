@@ -7,7 +7,8 @@
 uniform_succ_em(Y, alpha, sig_diag, a_seq, b_seq, pi_init = NULL,
   Z_init = NULL, lambda = NULL, print_ziter = FALSE,
   print_progress = FALSE, em_z_start_sd = 1, em_itermax = 200,
-  em_tol = 10^-6, pi_init_type = "random", true_Z = NULL)
+  em_tol = 10^-3, pi_init_type = c("random", "uniform", "zero_conc"),
+  true_Z = NULL, var_scale = TRUE, optmethod = c("coord", "em"))
 }
 \arguments{
 \item{Y}{A p by 1 matrix of numerics. The data.}
@@ -54,6 +55,9 @@ simplex. "uniform" will give each value equal mass. "zero_conc"
 will give more mass to 0 than any other probability.}
 
 \item{true_Z}{The true Z values. Used for testing.}
+
+\item{var_scale}{A logical. Should we update the scaling on the
+variances (\code{TRUE}) or not (\code{FALSE}).}
 }
 \description{
 EM algorithm for second step of SUCCOTASH

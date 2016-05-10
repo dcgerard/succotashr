@@ -83,7 +83,7 @@ succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
                           resid_vec = c(resid_vec), tau_seq = tau_seq,
                           sig_diag = sig_diag, pen = pen,
                           method = "Brent", lower = 0, upper = 10,
-                          control = list(fnscale = -1))
+                          control = list(fnscale = -1, maxit = 10))
             scale_val_new <- oout$par
 
             ## ## Update scale using a grid
@@ -126,9 +126,8 @@ succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
 #'     standard deviations, not variances.
 #' @param sig_diag A p-vector of positive numerics. The estimated
 #'     variances, not standard deviations.
-#' @param pen A numeric (usually positive) that adjusts the
-#'     variance. I think this should be the number of known
-#'     covariates, i.e. the number of columns in \code{X}.
+#' @param pen Now defunct. A numeric (usually positive) that adjusts the
+#'     variance. Doesn't work too well, so may be removed at any time.
 #'
 fun_scale <- function(scale_val, T, resid_vec, tau_seq, sig_diag, pen = 0) {
     var_mat <- outer(scale_val * sig_diag, tau_seq ^ 2, "+")
@@ -419,7 +418,7 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
 #' @param plot_new_ests A logical. Should we plot the new estimates of
 #'     pi?
 #' @param var_scale A logical. Should we update the scaling on the
-#'     variances (\code{TRUE}) or not (\code{FALSE})
+#'     variances (\code{TRUE}) or not (\code{FALSE}).
 #' @param pen Defunct. A numeric (usually positive). The correction
 #'     term for the scaling factor. This doesn't work too well so may
 #'     be removed at any time.
@@ -615,15 +614,22 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
 #' @param two_step A logical. Should we run the two-step SUCCOTASH
 #'     procedure of inflating the variance (\code{TRUE}) or not
 #'     (\code{FALSE})? Defaults to \code{TRUE}.
+#' @param optmethod Either coordinate ascent (\code{"coord"}) or an EM
+#'     algorithm (\code{"em"}). Coordinate ascent is currently only
+#'     implemented in the uniform mixtures case, for which it is the
+#'     default.
 #'
 #'
 #' @return See \code{\link{succotash_given_alpha}} for details of output.
 #'
 #'   \code{Y1_scaled} The OLS estimates.
 #'
-#'   \code{sig_diag_scaled} The standard errors of the OLS estimates.
+#'   \code{sig_diag_scaled} The estimated standard errors of the
+#'   estimated effects (calculated from the factor analysis step)
+#'   times \code{scale_val}.
 #'
-#'   \code{sig_diag} The estimates of the gene-wise variances.
+#'   \code{sig_diag} The estimates of the gene-wise variances (but not
+#'   times \code{scale_val}).
 #'
 #'   \code{pi0} A non-negative numeric. The marginal probability of zero.
 #'
@@ -666,9 +672,11 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                       likelihood = c("normal", "t"), lambda0 = 10,
                       tau_seq = NULL, em_pi_init = NULL,
                       plot_new_ests = FALSE, em_itermax = 200,
-                      var_scale = TRUE, inflate_var = 1, pen = 0) {
+                      var_scale = TRUE, inflate_var = 1,
+                      optmethod = c("coord", "em"), pen = 0) {
     ncol_x <- ncol(X)
 
+    optmethod <- match.arg(optmethod,  c("coord", "em"))
     fa_method <- match.arg(fa_method, c("pca", "reg_mle", "quasi_mle",
                                         "flash", "homoPCA",
                                         "pca_shrinkvar", "mod_fa",
@@ -808,28 +816,55 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                                                  var_scale = FALSE, # assume scale known now.
                                                  pen = 0)
                 suc_out$scale_val <- new_scale
+                suc_out$sig_diag_scaled <- sig_diag_scaled
             } else {
                 suc_out <- suc_out_bland
+                suc_out$sig_diag_scaled <- c(sig_diag_scaled) * suc_out$scale_val
             }
         } else if (mix_type == "uniform") {
-            suc_out <-
-                uniform_succ_given_alpha(Y = Y1_scaled, alpha = alpha_scaled,
-                                         sig_diag = sig_diag_scaled, num_em_runs = num_em_runs,
-                                         em_z_start_sd = z_start_sd, lambda_type = lambda_type,
-                                         em_itermax = em_itermax)
+            suc_out_bland <- uniform_succ_given_alpha(Y = Y1_scaled,
+                                                      alpha = alpha_scaled,
+                                                      sig_diag = sig_diag_scaled,
+                                                      num_em_runs = num_em_runs,
+                                                      em_z_start_sd = z_start_sd,
+                                                      lambda_type = lambda_type,
+                                                      em_itermax = em_itermax,
+                                                      var_scale = var_scale,
+                                                      optmethod = optmethod)
+            if (two_step) {
+                new_scale <- suc_out_bland$scale_val * nrow(X) / (nrow(X) - k - ncol_x)
+                sig_diag_scaled <- sig_diag_scaled * new_scale # inflate variance
+                suc_out <- uniform_succ_given_alpha(Y = Y1_scaled,
+                                                    alpha = alpha_scaled,
+                                                    sig_diag = sig_diag_scaled,
+                                                    num_em_runs = num_em_runs,
+                                                    em_z_start_sd = z_start_sd,
+                                                    lambda_type = lambda_type,
+                                                    em_itermax = em_itermax,
+                                                    var_scale = FALSE,
+                                                    optmethod = optmethod)
+                suc_out$scale_val <- new_scale
+                suc_out$sig_diag_scaled <- sig_diag_scaled
+            } else {
+                suc_out <- suc_out_bland
+                suc_out$sig_diag_scaled <- c(sig_diag_scaled) * suc_out$scale_val
+            }
         }
     } else if (likelihood == "t") {
-        suc_out <-
-            t_uniform_succ_given_alpha(Y = Y1_scaled, alpha = alpha_scaled, nu = nu,
-                                       sig_diag = sig_diag_scaled, num_em_runs = num_em_runs,
-                                       em_z_start_sd = z_start_sd, lambda_type = lambda_type,
-                                       em_itermax = em_itermax, print_progress = FALSE)
+        suc_out <- t_uniform_succ_given_alpha(Y = Y1_scaled,
+                                              alpha = alpha_scaled,
+                                              nu = nu,
+                                              sig_diag = sig_diag_scaled,
+                                              num_em_runs = num_em_runs,
+                                              em_z_start_sd = z_start_sd,
+                                              lambda_type = lambda_type,
+                                              em_itermax = em_itermax,
+                                              print_progress = FALSE)
+        suc_out$sig_diag_scaled <- sig_diag_scaled
     }
 
     suc_out$Y1_scaled <- Y1_scaled  ## ols estimates
     suc_out$alpha_scaled <- alpha_scaled
-    ## don't know if I should multiply this by scale_val
-    suc_out$sig_diag_scaled <- sig_diag_scaled
     suc_out$sig_diag <- sig_diag
     return(suc_out)
 }

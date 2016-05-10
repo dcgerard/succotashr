@@ -98,9 +98,12 @@ See \code{\link{succotash_given_alpha}} for details of output.
 
   \code{Y1_scaled} The OLS estimates.
 
-  \code{sig_diag_scaled} The standard errors of the OLS estimates.
+  \code{sig_diag_scaled} The estimated standard errors of the
+  estimated effects (calculated from the factor analysis step)
+  times \code{scale_val}.
 
-  \code{sig_diag} The estimates of the gene-wise variances.
+  \code{sig_diag} The estimates of the gene-wise variances (but not
+  times \code{scale_val}).
 
   \code{pi0} A non-negative numeric. The marginal probability of zero.
 

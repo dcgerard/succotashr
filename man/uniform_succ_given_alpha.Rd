@@ -9,7 +9,7 @@ uniform_succ_given_alpha(Y, alpha, sig_diag, num_em_runs = 2, a_seq = NULL,
   pi_init = NULL, Z_init = NULL, em_z_start_sd = 1,
   pi_init_type = "random", lambda_type = "zero_conc",
   print_progress = TRUE, print_ziter = FALSE, true_Z = NULL,
-  use_SQUAREM = FALSE)
+  var_scale = TRUE)
 }
 \arguments{
 \item{Y}{A p by 1 matrix of numerics. The data.}
@@ -64,8 +64,8 @@ Newton iterations for updating Z?}
 
 \item{true_Z}{The true Z values. Used for testing.}
 
-\item{use_SQUAREM}{A logical. Should we use SQUAREM to run the EM?
-Not quite implemented yet.}
+\item{var_scale}{A logical. Should we update the scaling on the
+variances (\code{TRUE}) or not (\code{FALSE}).}
 }
 \description{
 Second step of SUCCOTASH with uniform mixture.

@@ -2,7 +2,7 @@ library(succotashr)
 context("Make sure uniform mixtures run")
 
 test_that("uniform_succotash_em will actually run", {
-    set.seed(10)
+    set.seed(110)
     p <- 7
     k <- 2
     m <- 11
@@ -24,10 +24,11 @@ test_that("uniform_succotash_em will actually run", {
 
     pzout <- uniform_succ_em(Y = Y, alpha = alpha,
                              sig_diag = sig_diag, a_seq = a_seq,
-                             b_seq = b_seq, print_ziter = TRUE)
+                             b_seq = b_seq, print_ziter = TRUE,
+                             var_scale = var_scale)
 
-    expect_true(all(pzout$pi_new > 0))
-    expect_true(all(pzout$pi_new < 1))
+    expect_true(all(pzout$pi_new > -10^-14))
+    expect_true(all(pzout$pi_new < 1 + 10 ^ -14))
     expect_equal(sum(pzout$pi_new), 1)
 }
 )
@@ -53,7 +54,8 @@ test_that("succotash_unif_fixed will actually run",{
 
 
   pzout <- succotash_unif_fixed(pi_Z = pi_Z, lambda = lambda, alpha = alpha, Y = Y,
-                           a_seq = a_seq, b_seq = b_seq, sig_diag = sig_diag)
+                           a_seq = a_seq, b_seq = b_seq, sig_diag = sig_diag,
+                           var_scale = FALSE)
   expect_equal(sum(pzout[1:length(pi_vals)]), 1)
   expect_true(all(pzout[1:length(pi_vals)] < 1))
   expect_true(all(pzout[1:length(pi_vals)] > 0))
