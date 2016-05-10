@@ -1,7 +1,7 @@
 library(succotashr)
 context("Make sure likelihood increases monotonically")
 
-test_that("succotash_fixed will increases likelihood",{
+test_that("succotash_fixed will increases likelihood", {
     set.seed(692)
     p <- 7
     k <- 2
@@ -43,7 +43,7 @@ test_that("succotash_fixed will increases likelihood",{
 )
 
 
-test_that("succotash_unif_fixed will increase likelihood",{
+test_that("succotash_unif_fixed will increase likelihood", {
   set.seed(211)
   p <- 7
   k <- 2

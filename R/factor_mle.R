@@ -59,7 +59,7 @@ update_sigma <- function(Y, A, lambda = 0.01) {
 #'
 #' @return \code{A_new} The update of the mean matrix.
 update_A <- function(Y, sig_diag, k) {
-    svd_a <- svd((1 / sqrt(sig_diag)) * t(Y), nu = k, nv = k)
+    svd_a <- svd( (1 / sqrt(sig_diag)) * t(Y), nu = k, nv = k)
     A_new <- t(sqrt(sig_diag) * tcrossprod(t(svd_a$d[1:k] * t(svd_a$u)), svd_a$v))
     return(A_new)
 }
@@ -82,7 +82,7 @@ f_val <- function(Y, sig_diag, A, lambda = 0.01) {
     n <- nrow(Y)
     p <- ncol(Y)
     llike <- -n / 2 * sum(log(sig_diag)) -
-      sum(((1 / sqrt(sig_diag)) * t(Y - A)) ^ 2) / 2 -
+      sum( ( (1 / sqrt(sig_diag)) * t(Y - A)) ^ 2) / 2 -
       log(2 * pi) * n * p / 2 - lambda * sum(1 / sig_diag) / 2
     return(llike)
 }

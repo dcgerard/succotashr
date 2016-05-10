@@ -12,6 +12,9 @@ llike_unif_simp(Y, Z, pi_vals, alpha, sig_diag, left_seq, right_seq,
 
 \item{Z}{a k by 1 matrix of numerics.}
 
+\item{pi_vals}{A vector of non-negative numerics that sum to
+one. The mixing proportions.}
+
 \item{alpha}{A p by k matrix of numerics.}
 
 \item{sig_diag}{A p-vector of numerics.}

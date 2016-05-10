@@ -11,7 +11,8 @@ succotash(Y, X, k, sig_reg = 0.01, num_em_runs = 2, z_start_sd = 1,
   "non_hetero", "non_shrinkvar"), lambda_type = "zero_conc",
   mix_type = "normal", likelihood = c("normal", "t"), lambda0 = 10,
   tau_seq = NULL, em_pi_init = NULL, plot_new_ests = FALSE,
-  em_itermax = 200, var_scale = TRUE, inflate_var = 1, pen = 0)
+  em_itermax = 200, var_scale = TRUE, inflate_var = 1,
+  optmethod = c("coord", "em"), pen = 0)
 }
 \arguments{
 \item{Y}{An \code{n} by \code{p} matrix of response variables.}
@@ -88,6 +89,11 @@ the normal mixtures case right now. Defaults to \code{TRUE}.}
 inflate the variance estimates by. There is no theoretical
 justification for it to be anything but 1, but I have it in
 here to play around with it.}
+
+\item{optmethod}{Either coordinate ascent (\code{"coord"}) or an EM
+algorithm (\code{"em"}). Coordinate ascent is currently only
+implemented in the uniform mixtures case, for which it is the
+default.}
 
 \item{pen}{Now defunct. A numeric. The amount to penalize
 by. Defaults to zero. This doesn't work too well and may be

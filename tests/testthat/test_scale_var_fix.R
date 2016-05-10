@@ -93,7 +93,7 @@ test_that("two-step actually works", {
     pi_vals <- c(0.5, 0.3, 0.2)
     tau_seq <- c(0, 1, 2)
 
-    beta0 <- matrix(rnorm((q - 1) * p), nrow = q - 1)
+    beta0 <- matrix(rnorm( (q - 1) * p), nrow = q - 1)
     beta1 <- draw_beta(pi_vals = pi_vals, tau_seq = tau_seq, p = p)
     beta  <- rbind(beta0, beta1)
     X     <- matrix(rnorm(n * q), nrow = n)
@@ -110,6 +110,6 @@ test_that("two-step actually works", {
 
     expect_equal(suc0$sig_diag_scaled * n / (n - k - q),
                  suc1$sig_diag_scaled)
-    expect_equal(suc1$sig_diag_scaled, suc2$sig_diag_scaled, tol = 10^-4)
+    expect_equal(suc1$sig_diag_scaled, suc2$sig_diag_scaled, tol = 10 ^ -4)
 }
 )

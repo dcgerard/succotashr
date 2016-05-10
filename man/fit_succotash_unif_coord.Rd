@@ -8,6 +8,39 @@ fit_succotash_unif_coord(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
   print_ziter = FALSE, newt_itermax = 100, tol = 10^-4,
   var_scale = TRUE)
 }
+\arguments{
+\item{pi_Z}{A vector. The first \code{M} values are the current
+values of \eqn{\pi}. The last \code{k} values are the current
+values of \eqn{Z}.}
+
+\item{lambda}{A vector. This is a length \code{M} vector with the
+regularization parameters for the mixing proportions.}
+
+\item{alpha}{A matrix. This is of dimension \code{p} by \code{k} and
+are the coefficients to the confounding variables.}
+
+\item{Y}{A p by 1 matrix of numerics. The data.}
+
+\item{a_seq}{A vector of negative numerics containing the left
+endpoints of the mixing uniforms.}
+
+\item{b_seq}{A vector of positiv numerics containing the right
+endpoints of the mixing uniforms.}
+
+\item{sig_diag}{A vector of the variances of \code{Y}.}
+
+\item{print_ziter}{A logical. Should we we print each iteration of
+the Z optimization?}
+
+\item{newt_itermax}{A positive integer. The maximum number of Newton
+steps to perform in updating \eqn{Z}.}
+
+\item{tol}{A positive numeric. The stopping criterion for Newton's
+method in updating Z.}
+
+\item{var_scale}{A logical. Should we update the scaling on the
+variances (\code{TRUE}) or not (\code{FALSE}).}
+}
 \description{
 Fixed point for uniform succotash when doing coordinate descent.
 }

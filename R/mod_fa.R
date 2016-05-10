@@ -26,8 +26,8 @@ update_f <- function(L, Y) {
 #'
 #'
 update_l <- function(L, F, Y, beta) {
-    optim_out <- optim(par = L, fn = fn_l, gr = gr_l, F = F, Y = Y, beta = beta,
-                       method = "L-BFGS-B")
+    optim_out <- stats::optim(par = L, fn = fn_l, gr = gr_l, F = F,
+                              Y = Y, beta = beta, method = "L-BFGS-B")
     return(L = optim_out$par)
 }
 
@@ -59,7 +59,7 @@ gr_l <- function(L, F, Y, beta) {
     resid_fit <- Y - fit
     sse_vec <- colSums(resid_fit ^ 2)
     sum_tot <- 0
-    for(index in 1:ncol(Y)) {
+    for (index in 1:ncol(Y)) {
         sum_tot <- sum_tot + (fit[, index] %*% t(F[, index]) - Y[, index] %*% t(F[, index])) /
             (sse_vec[index] + 2 * beta)
     }
@@ -73,9 +73,10 @@ gr_l <- function(L, F, Y, beta) {
 #' @inheritParams update_l
 #'
 update_ab <- function(alpha, beta, Y, L, F) {
-    optim_out <- optim(par = c(alpha, beta), fn = fn_ab, gr = gr_ab, method = "L-BFGS-B",
-                       Y = Y, L = L, F = F,
-                       control = list(fnscale = -1))
+    optim_out <- stats::optim(par = c(alpha, beta), fn = fn_ab,
+                              gr = gr_ab, method = "L-BFGS-B", Y = Y,
+                              L = L, F = F,
+                              control = list(fnscale = -1))
     return(optim_out$par, )
 }
 
@@ -146,15 +147,15 @@ mod_fa <- function(Y, k, tol = 10 ^ -6, itermax =  100) {
     mse_vec <- colSums(resid_vals ^ 2) / (nrow(Y) - 1)
 
     ## method of moments for starting alpha and beta based on log-gamma distributed variances.
-    emp_var <- var(log(mse_vec))
+    emp_var <- stats::var(log(mse_vec))
     emp_mean <- mean(log(mse_vec))
-    alpha <- uniroot(f = minus_trigamma, emp_var = emp_var, interval = c(0, 100))$root
+    alpha <- stats::uniroot(f = minus_trigamma, emp_var = emp_var, interval = c(0, 100))$root
     beta <- exp(digamma(alpha) - emp_mean)
 
     current_fit <- L %*% F
     err <- tol + 1
     iter_index <- 1
-    while(err > tol & iter_index < itermax) {
+    while (err > tol & iter_index < itermax) {
         old_fit <- current_fit
         L <- update_l(L = L, F = F, Y = Y, beta = beta)
         F <- update_f(L = L, Y = Y)

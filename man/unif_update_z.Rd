@@ -34,6 +34,8 @@ mixing proportions.}
 
 \item{Z_old}{A vector of numerics. The old confounders.}
 
+\item{llike_old}{The old log-likelihood}
+
 \item{tol}{A positive numeric. The stopping criterion for Newton's
 method in updating Z.}
 
@@ -42,6 +44,8 @@ steps to perform in updating \eqn{Z}.}
 
 \item{print_ziter}{A logical. Should we we print each iteration of
 the Z optimization?}
+
+\item{scale_val}{A positive numeric. The variance inflation parameter.}
 }
 \description{
 Runs a few newton steps to update Z given scale_val.

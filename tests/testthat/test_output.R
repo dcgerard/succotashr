@@ -1,7 +1,7 @@
 library(succotashr)
 context("Make sure it actually runs")
 
-test_that("succotash_fixed will actually run with var_scale = TRUE",{
+test_that("succotash_fixed will actually run with var_scale = TRUE", {
     ## generate random data for succotash
     p <- 20
     n <- 10

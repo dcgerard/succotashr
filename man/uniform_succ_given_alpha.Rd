@@ -9,7 +9,7 @@ uniform_succ_given_alpha(Y, alpha, sig_diag, num_em_runs = 2, a_seq = NULL,
   pi_init = NULL, Z_init = NULL, em_z_start_sd = 1,
   pi_init_type = "random", lambda_type = "zero_conc",
   print_progress = TRUE, print_ziter = FALSE, true_Z = NULL,
-  var_scale = TRUE)
+  var_scale = TRUE, optmethod = c("coord", "em"))
 }
 \arguments{
 \item{Y}{A p by 1 matrix of numerics. The data.}
@@ -66,6 +66,11 @@ Newton iterations for updating Z?}
 
 \item{var_scale}{A logical. Should we update the scaling on the
 variances (\code{TRUE}) or not (\code{FALSE}).}
+
+\item{optmethod}{Either coordinate ascent (\code{"coord"}) or an EM
+algorithm (\code{"em"}). Coordinate ascent is currently only
+implemented in the uniform mixtures case, for which it is the
+default.}
 }
 \description{
 Second step of SUCCOTASH with uniform mixture.

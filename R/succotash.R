@@ -36,11 +36,11 @@ succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
     } else {
         mean_mat <- matrix(0, ncol = M, nrow = p)
     }
-    top_vals <- t(pi_old * t(dnorm(matrix(rep(Y, M), ncol = M, nrow = p), mean = mean_mat,
+    top_vals <- t(pi_old * t(stats::dnorm(matrix(rep(Y, M), ncol = M, nrow = p), mean = mean_mat,
                                    sd = sqrt(var_mat))))
     T <- t(1 / rowSums(top_vals) * top_vals)
 
-    Theta_diag <- colSums((T / t(var_mat)) / 2)
+    Theta_diag <- colSums( (T / t(var_mat)) / 2)
 
     T_sum <- rowSums(T)
     pi_new <- (T_sum + lambda - 1) / (p - M + sum(lambda))
@@ -67,7 +67,7 @@ succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
             scale_val_old <- scale_val_new
             ## update Z
             var_mat <- outer(scale_val_new * sig_diag, tau_seq ^ 2, "+")
-            Theta_diag <- colSums((T / t(var_mat)) / 2)
+            Theta_diag <- colSums( (T / t(var_mat)) / 2)
             Z_new <- solve(t(alpha) %*% (Theta_diag * alpha)) %*% t(Theta_diag * alpha) %*% Y
             resid_vec <- Y - alpha %*% Z_new
 
@@ -79,11 +79,11 @@ succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
             ## scale_val_new <- scale_val_new - grad_scale / hess_scale
 
             ## Update scale with Brent's method
-            oout <- optim(par = scale_val_new, fn = fun_scale, T = T,
-                          resid_vec = c(resid_vec), tau_seq = tau_seq,
-                          sig_diag = sig_diag, pen = pen,
-                          method = "Brent", lower = 0, upper = 10,
-                          control = list(fnscale = -1, maxit = 10))
+            oout <- stats::optim(par = scale_val_new, fn = fun_scale, T = T,
+                                 resid_vec = c(resid_vec), tau_seq = tau_seq,
+                                 sig_diag = sig_diag, pen = pen,
+                                 method = "Brent", lower = 0, upper = 10,
+                                 control = list(fnscale = -1, maxit = 10))
             scale_val_new <- oout$par
 
             ## ## Update scale using a grid
@@ -101,8 +101,10 @@ succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
         }
     }
 
-    if(plot_new_ests) {
-        plot(tau_seq, pi_new, type = "h", xlab = expression(tau[k]), ylab = expression(pi[k]))
+    if (plot_new_ests) {
+        graphics::plot(tau_seq, pi_new, type = "h",
+                       xlab = expression(tau[k]),
+                       ylab = expression(pi[k]))
     }
 
     if (!var_scale) {
@@ -175,7 +177,7 @@ succotash_llike <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag, plot_new_
 
     var_mat <- outer(scale_val * sig_diag, tau_seq ^ 2, "+")
 
-    top_vals <- t(pi_current * t(dnorm(matrix(rep(Y, M), ncol = M, nrow = p), mean = mean_mat,
+    top_vals <- t(pi_current * t(stats::dnorm(matrix(rep(Y, M), ncol = M, nrow = p), mean = mean_mat,
                                        sd = sqrt(var_mat))))
 
     ## which_lambda <- lambda == 1
@@ -285,7 +287,7 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
         if (pi_init_type == "random") {
             ## random start points
             pi_init <- rep(NA, length = M)
-            temp <- abs(rnorm(M))
+            temp <- abs(stats::rnorm(M))
             pi_init[1:M] <- temp / sum(temp)
         } else if (pi_init_type == "uniform") {
             ## uniform mass
@@ -315,9 +317,9 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
     if (is.null(alpha)) {
         ## do nothing
     } else if (is.null(Z_init)) {
-        Z_init <- matrix(rnorm(k, sd = z_start_sd), nrow = k)
+        Z_init <- matrix(stats::rnorm(k, sd = z_start_sd), nrow = k)
     } else if (length(Z_init) != k) {
-        Z_init <- matrix(rnorm(k, sd = z_start_sd), nrow = k)
+        Z_init <- matrix(stats::rnorm(k, sd = z_start_sd), nrow = k)
     }
 
     if (!var_scale) {
@@ -477,7 +479,7 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
                            var_scale = var_scale,
                            pen = pen)
 
-    if(num_em_runs > 1) {
+    if (num_em_runs > 1) {
         for (index in 2:num_em_runs) {
             em_new <- succotash_em(Y = Y, alpha = alpha,
                                    sig_diag = sig_diag, tau_seq = tau_seq,
@@ -762,7 +764,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
         svdY <- svd(Y_current)
         alpha <- svdY$v[, 1:k] %*% diag(svdY$d[1:k], k, k) / sqrt(nrow(Y_current))
         Ztemp <- sqrt(nrow(Y_current)) * svdY$u[, 1:k]
-        sig_diag <- rep(sum((Y_current - Ztemp %*% t(alpha)) ^ 2) /
+        sig_diag <- rep(sum( (Y_current - Ztemp %*% t(alpha)) ^ 2) /
                         (max(dim(Y_current)) * (min(dim(Y_current)) - k)), ncol(Y_current))
         nu <- n - 1
     } else if (fa_method == "pca_shrinkvar" & requireNamespace("limma", quietly = TRUE)) {
@@ -909,7 +911,7 @@ succotash_summaries <- function(Y, Z, pi_vals, alpha, sig_diag, tau_seq, scale_v
         mean_mat <- matrix(0, ncol = M, nrow = p)
     }
     var_mat <- outer(sig_diag, tau_seq ^ 2, "+")
-    top_vals <- t(pi_vals * t(dnorm(matrix(rep(Y, M), ncol = M, nrow = p), mean = mean_mat,
+    top_vals <- t(pi_vals * t(stats::dnorm(matrix(rep(Y, M), ncol = M, nrow = p), mean = mean_mat,
                                     sd = sqrt(var_mat))))
     T <- t(1 / rowSums(top_vals) * top_vals)
 
@@ -925,7 +927,8 @@ succotash_summaries <- function(Y, Z, pi_vals, alpha, sig_diag, tau_seq, scale_v
     }
     post.var <- outer(tau_seq ^ 2, sig_diag, "*") / cov_plus
 
-    post.less <- pnorm(q = matrix(0, ncol = p, nrow = M), mean = post.mean, sd = sqrt(post.var))
+    post.less <- stats::pnorm(q = matrix(0, ncol = p, nrow = M),
+                              mean = post.mean, sd = sqrt(post.var))
     post.less[1, ] <- 0
 
     prob.less <- colSums(T * post.less)
@@ -989,7 +992,7 @@ draw_beta <- function(pi_vals, tau_seq, p) {
         current.ind <- which.mix == index
         n_m <- sum(current.ind)
         if (n_m > 0) {
-            beta[current.ind] <- rnorm(n = n_m, mean = 0, sd = tau_seq[index])
+            beta[current.ind] <- stats::rnorm(n = n_m, mean = 0, sd = tau_seq[index])
         }
     }
     return(beta)

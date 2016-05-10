@@ -38,7 +38,7 @@ succotash_unif_fixed <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
                                  print_ziter = FALSE, newt_itermax = 4, tol = 10 ^ -4,
                                  var_scale = TRUE) {
     M <- length(a_seq) + length(b_seq) + 1
-    p <- nrow(Y)
+    ## p <- nrow(Y)
     if (var_scale) {
         k         <- length(pi_Z) - M - 1
         scale_val <- pi_Z[length(pi_Z)]
@@ -85,11 +85,13 @@ succotash_unif_fixed <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
             Z_new     <- update_z_out$Z_new
             llike_new <- update_z_out$llike_new
             ## cat(llike_new, "\n")
-            oout <- optim(par = scale_val, fn = fun_unif_scale,
-                          Y = Y, az = alpha %*% Z_new, sig_diag = sig_diag,
-                          Tkj = Tkj, a_seq = a_seq, b_seq = b_seq,
-                          method = "Brent", lower = 0, upper = 10,
-                          control = list(fnscale = -1, maxit = 10))
+            oout <- stats::optim(par = scale_val, fn = fun_unif_scale,
+                                 Y = Y, az = alpha %*% Z_new,
+                                 sig_diag = sig_diag, Tkj = Tkj,
+                                 a_seq = a_seq, b_seq = b_seq,
+                                 method = "Brent", lower = 0,
+                                 upper = 10,
+                                 control = list(fnscale = -1, maxit = 10))
             scale_val_new <- oout$par
 
             scale_val_err   <- abs(scale_val_new / scale_val_old - 1)
@@ -147,14 +149,14 @@ unif_update_pi <- function(pi_old, Y, sig_diag, alpha, a_seq, b_seq,
     which_switch <- (left_bigger * sign(left_means) + (!left_bigger) * sign(right_means)) == 1
 
     pdiff <- matrix(NA, nrow = nrow(left_means), ncol = ncol(left_means))
-    pdiff[!which_switch] <- pnorm(left_means[!which_switch]) -
-        pnorm(right_means[!which_switch])
-    pdiff[which_switch] <- pnorm(-1 * right_means[which_switch]) -
-        pnorm(-1 * left_means[which_switch])
+    pdiff[!which_switch] <- stats::pnorm(left_means[!which_switch]) -
+        stats::pnorm(right_means[!which_switch])
+    pdiff[which_switch] <- stats::pnorm(-1 * right_means[which_switch]) -
+        stats::pnorm(-1 * left_means[which_switch])
 
     ## calculate new pi values
     fkj    <- pdiff %*% diag(1 / abs(right_seq - left_seq))
-    f0j    <- dnorm(Y, az, sqrt(sig_diag))
+    f0j    <- stats::dnorm(Y, az, sqrt(sig_diag))
     fkj    <- cbind(fkj[, 1:length(a_seq)], f0j, fkj[, (length(a_seq) + 1):ncol(fkj)])
     fkj_pi <- fkj %*% diag(pi_old)
     Tkj    <- diag(1 / rowSums(fkj_pi)) %*% fkj_pi
@@ -174,6 +176,8 @@ unif_update_pi <- function(pi_old, Y, sig_diag, alpha, a_seq, b_seq,
 #'     mixing proportions.
 #' @param Tkj A matrix of numerics. The T matrix.
 #' @param Z_old A vector of numerics. The old confounders.
+#' @param llike_old The old log-likelihood
+#' @param scale_val A positive numeric. The variance inflation parameter.
 unif_update_z <- function(Y, sig_diag, alpha, lambda, a_seq, b_seq, pi_new, Tkj, Z_old, llike_old,
                           tol = 10 ^ -3, newt_itermax = 10, print_ziter = FALSE,
                           scale_val = 1) {
@@ -182,7 +186,7 @@ unif_update_z <- function(Y, sig_diag, alpha, lambda, a_seq, b_seq, pi_new, Tkj,
     Z_new <- Z_old
     mult_val <- 1
     llike_new <- llike_old
-    while(z_diff > tol & newt_iter < newt_itermax) {
+    while (z_diff > tol & newt_iter < newt_itermax) {
         did_I_move <- TRUE
 
         llike_old <- llike_new
@@ -207,20 +211,20 @@ unif_update_z <- function(Y, sig_diag, alpha, lambda, a_seq, b_seq, pi_new, Tkj,
         pnorm_diff_right <- matrix(NA, nrow = nrow(right_means), ncol = ncol(right_means))
 
         pnorm_diff_left[left_ispos] <-
-            pnorm(-1 * zero_means_left[left_ispos]) - pnorm(-1 * left_means[left_ispos])
+            stats::pnorm(-1 * zero_means_left[left_ispos]) - stats::pnorm(-1 * left_means[left_ispos])
         pnorm_diff_right[right_ispos] <-
-            pnorm(-1 * right_means[right_ispos]) - pnorm(-1 * zero_means_right[right_ispos])
+            stats::pnorm(-1 * right_means[right_ispos]) - stats::pnorm(-1 * zero_means_right[right_ispos])
 
         pnorm_diff_left[!left_ispos] <-
-            pnorm(left_means[!left_ispos]) - pnorm(zero_means_left[!left_ispos])
+            stats::pnorm(left_means[!left_ispos]) - stats::pnorm(zero_means_left[!left_ispos])
         pnorm_diff_right[!right_ispos] <-
-            pnorm(zero_means_right[!right_ispos]) - pnorm(right_means[!right_ispos])
+            stats::pnorm(zero_means_right[!right_ispos]) - stats::pnorm(right_means[!right_ispos])
 
         ## calculate gradient
         dnorm_diff_left <- diag(1 / sqrt(sig_diag)) %*%
-            (dnorm(zero_means_left) - dnorm(left_means))
+            (stats::dnorm(zero_means_left) - stats::dnorm(left_means))
         dnorm_diff_right <- diag(1 / sqrt(sig_diag)) %*%
-            (dnorm(right_means) - dnorm(zero_means_right))
+            (stats::dnorm(right_means) - stats::dnorm(zero_means_right))
         dpratios_left <- dnorm_diff_left / pnorm_diff_left
         dpratios_right <- dnorm_diff_right / pnorm_diff_right
 
@@ -241,10 +245,10 @@ unif_update_z <- function(Y, sig_diag, alpha, lambda, a_seq, b_seq, pi_new, Tkj,
         gradient_val <- colSums(diag(alpha_weights) %*% alpha)
 
         ##calculate Hessian
-        top_left <- left_means * dnorm(left_means) -
-            zero_means_left *  dnorm(zero_means_left)
-        top_right <- zero_means_right * dnorm(zero_means_right) -
-            right_means * dnorm(right_means)
+        top_left <- left_means * stats::dnorm(left_means) -
+            zero_means_left *  stats::dnorm(zero_means_left)
+        top_right <- zero_means_right * stats::dnorm(zero_means_right) -
+            right_means * stats::dnorm(right_means)
 
 
 
@@ -287,7 +291,7 @@ unif_update_z <- function(Y, sig_diag, alpha, lambda, a_seq, b_seq, pi_new, Tkj,
             did_I_move <- FALSE
         }
 
-        if(did_I_move == FALSE & newt_iter == 1) {
+        if (did_I_move == FALSE & newt_iter == 1) {
             break
         }
 
@@ -330,34 +334,36 @@ get_pdiffs <- function(resid_vec, sig_diag, a_seq, b_seq, like_type = "normal") 
     which_switch <- (left_bigger * sign(left_means) + (!left_bigger) * sign(right_means)) == 1
 
     pdiff <- matrix(NA, nrow = nrow(left_means), ncol = ncol(left_means))
-    pdiff[!which_switch] <- pnorm(left_means[!which_switch]) -
-        pnorm(right_means[!which_switch])
-    pdiff[which_switch] <- pnorm(-1 * right_means[which_switch]) -
-        pnorm(-1 * left_means[which_switch])
+    pdiff[!which_switch] <- stats::pnorm(left_means[!which_switch]) -
+        stats::pnorm(right_means[!which_switch])
+    pdiff[which_switch] <- stats::pnorm(-1 * right_means[which_switch]) -
+        stats::pnorm(-1 * left_means[which_switch])
     return(pdiff)
 }
+
 
 
 #' Criterion function for the scale parameter as an intermediate step
 #' to the EM algorithm when using uniform mixtures.
 #'
+#'
+#' @param scale_val A positive numeric. The variance inflation
+#'     parameter.
 #' @param Tkj An m by p matrix of numerics. The "T-values".
 #' @param Y A p by 1 matrix of numerics. The data.
-#' @param az A p by 1 matrix. This is alpha %*% Z
+#' @param az A p by 1 matrix. This is \eqn{alpha Z}.
 #' @param sig_diag A p-vector of numerics. The estimated variances.
 #' @param a_seq A vector of numerics. The non-zero left ends of the
 #'     uniforms.
 #' @param b_seq A vector of numerics. The non-zero right ends of the
 #'     uniforms.
-#' @param like_type A character. Available options are "normal" and "t".
 #'
 #'
-fun_unif_scale <- function(scale_val, Y, az, sig_diag, Tkj, a_seq, b_seq,
-                           llike_type = "normal") {
+fun_unif_scale <- function(scale_val, Y, az, sig_diag, Tkj, a_seq, b_seq) {
     sig_diag  <- scale_val * sig_diag
     pdiff_mat <- get_pdiffs(resid_vec = c(Y - az), sig_diag = sig_diag,
                             a_seq = a_seq, b_seq = b_seq)
-    center_part <- dnorm(Y, mean = az, sd = sqrt(sig_diag))
+    center_part <- stats::dnorm(Y, mean = az, sd = sqrt(sig_diag))
 
     log_mat <- log(cbind(pdiff_mat[, 1:length(a_seq)], center_part,
                          pdiff_mat[, (length(a_seq) + 1):ncol(pdiff_mat)]))
@@ -421,7 +427,7 @@ succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
     left_means_zero <- diag(1 / sqrt(sig_diag)) %*% outer(c( (Y - az)), rep(0, length(a_seq)), "-")
     right_means <- diag(1 / sqrt(sig_diag)) %*% outer(c( (Y - az)), b_seq, "-")
     right_means_zero <- diag(1 / sqrt(sig_diag)) %*% outer(c( (Y - az)), rep(0, length(b_seq)), "-")
-    zero_means <- dnorm(Y, mean = az, sd = sqrt(sig_diag))
+    zero_means <- stats::dnorm(Y, mean = az, sd = sqrt(sig_diag))
 
     left_ispos <- left_means > 0
     right_ispos <- right_means > 0
@@ -430,14 +436,14 @@ succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
     pnorm_right_diff <- matrix(NA, ncol = ncol(right_means), nrow = nrow(right_means))
 
     pnorm_left_diff[!left_ispos] <-
-        pnorm(left_means[!left_ispos]) - pnorm(left_means_zero[!left_ispos])
+        stats::pnorm(left_means[!left_ispos]) - stats::pnorm(left_means_zero[!left_ispos])
     pnorm_right_diff[!right_ispos] <-
-        pnorm(right_means_zero[!right_ispos]) - pnorm(right_means[!right_ispos])
+        stats::pnorm(right_means_zero[!right_ispos]) - stats::pnorm(right_means[!right_ispos])
 
     pnorm_left_diff[left_ispos] <-
-        pnorm(-1 * left_means_zero[left_ispos]) - pnorm(-1 * left_means[left_ispos])
+        stats::pnorm(-1 * left_means_zero[left_ispos]) - stats::pnorm(-1 * left_means[left_ispos])
     pnorm_right_diff[right_ispos] <-
-        pnorm(-1 * right_means[right_ispos]) - pnorm(-1 * right_means_zero[right_ispos])
+        stats::pnorm(-1 * right_means[right_ispos]) - stats::pnorm(-1 * right_means_zero[right_ispos])
 
     pnorm_left_diff <- pnorm_left_diff %*% diag(1 / a_seq)
     pnorm_right_diff <- pnorm_right_diff %*% diag(1 / b_seq)
@@ -497,6 +503,7 @@ succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
 #' @param sig_diag A vector of the variances of \code{Y}.
 #' @param var_scale A logical. Should we update the scaling on the
 #'     variances (\code{TRUE}) or not (\code{FALSE}).
+#' @inheritParams succotash
 #'
 #' @seealso \code{\link{succotash_llike_unif}}
 #'     \code{\link{succotash_unif_fixed}}
@@ -573,7 +580,7 @@ uniform_succ_given_alpha <-
                               optmethod = optmethod)
 
     ## Random init for other EM algorithms.
-    if(num_em_runs > 1) {
+    if (num_em_runs > 1) {
         for (em_index in 2:num_em_runs) {
             em_new <- uniform_succ_em(pi_init = pi_init, Z_init = Z_init,
                                       a_seq = a_seq, b_seq = b_seq,
@@ -593,7 +600,7 @@ uniform_succ_given_alpha <-
     }
     pi_current    <- em_out$pi_new
     Z_current     <- em_out$Z_new
-    llike_current <- em_out$llike
+    ## llike_current <- em_out$llike
     scale_val     <- em_out$scale_val
 
     mix_fit <- ashr::unimix(pi = pi_current,
@@ -609,7 +616,7 @@ uniform_succ_given_alpha <-
     probs <- ashr::comppostprob(m = mix_fit, x = c(Y - az),
                                 s = sqrt(sig_diag * scale_val),
                                 v = rep(1000, p))
-    lfdr <- probs[length(a_seq) + 1,]
+    lfdr <- probs[length(a_seq) + 1, ]
     qvals <- ashr::qval.from.lfdr(lfdr)
 
     pi0 <- pi_current[length(a_seq) + 1]
@@ -663,7 +670,7 @@ uniform_succ_em <- function(Y, alpha, sig_diag, a_seq, b_seq,
       if (pi_init_type == "random") {
         ## random start points
         pi_init <- rep(NA, length = M)
-        temp <- abs(rnorm(M))
+        temp <- abs(stats::rnorm(M))
         pi_init[1:M] <- temp / sum(temp)
       } else if (pi_init_type == "uniform") {
         ## uniform mass
@@ -678,9 +685,9 @@ uniform_succ_em <- function(Y, alpha, sig_diag, a_seq, b_seq,
     }
 
     if (is.null(Z_init)) {
-      Z_init <- matrix(rnorm(k, sd = em_z_start_sd), nrow = k)
+      Z_init <- matrix(stats::rnorm(k, sd = em_z_start_sd), nrow = k)
     } else if (length(Z_init) != k) {
-      Z_init <- matrix(rnorm(k, sd = em_z_start_sd), nrow = k)
+      Z_init <- matrix(stats::rnorm(k, sd = em_z_start_sd), nrow = k)
     }
 
     if (var_scale) {

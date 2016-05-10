@@ -19,7 +19,8 @@ Suggests:
     testthat,
     flash,
     limma,
-    flashr
+    flashr,
+    Rmosek
 Remotes: github::stephens999/ashr
 RoxygenNote: 5.0.1
 URL: https://github.com/dcgerard/succotashr

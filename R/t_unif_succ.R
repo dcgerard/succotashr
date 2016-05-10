@@ -54,7 +54,7 @@ t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 2,
     ## k <- ncol(alpha)
 
     ## set up grid
-    if(is.null(a_seq)) {
+    if (is.null(a_seq)) {
         a_max <- 2 * sqrt(max(Y ^ 2 - sig_diag))
         a_min <- sqrt(min(sig_diag)) / 10
         if (a_max < 0) {
@@ -143,7 +143,7 @@ t_uniform_succ_given_alpha <- function(Y, alpha, sig_diag, nu, num_em_runs = 2,
                               v = rep(nu, p))
 
     probs <- ashr::comppostprob(m = mix_fit, x = c(Y - az), s = sqrt(sig_diag), v = rep(nu, p))
-    lfdr <- probs[length(a_seq) + 1,]
+    lfdr <- probs[length(a_seq) + 1, ]
     qvals <- ashr::qval.from.lfdr(lfdr)
 
     pi0 <- pi_current[length(a_seq) + 1]
@@ -180,7 +180,7 @@ t_unif_em <- function(a_seq, b_seq, Y, alpha, sig_diag, nu, pi_init, Z_init, pi_
         if (pi_init_type == "random") {
             ## random start points
             pi_init <- rep(NA, length = M)
-            temp <- abs(rnorm(M))
+            temp <- abs(stats::rnorm(M))
             pi_init[1:M] <- temp / sum(temp)
         } else if (pi_init_type == "uniform") {
             ## uniform mass
@@ -195,25 +195,26 @@ t_unif_em <- function(a_seq, b_seq, Y, alpha, sig_diag, nu, pi_init, Z_init, pi_
     }
 
     if (is.null(Z_init)) {
-        Z_init <- matrix(rnorm(k, sd = em_z_start_sd), nrow = k)
+        Z_init <- matrix(stats::rnorm(k, sd = em_z_start_sd), nrow = k)
     } else if (length(Z_init) != k) {
-        Z_init <- matrix(rnorm(k, sd = em_z_start_sd), nrow = k)
+        Z_init <- matrix(stats::rnorm(k, sd = em_z_start_sd), nrow = k)
     }
 
     pi_Z <- c(pi_init, Z_init)
 
     pi_new <- pi_Z[1:M]
-    plot(c(a_seq, 0, b_seq), pi_new, type = "h", ylab = expression(pi), xlab = "a or b",
-         ylim = c(0,1))
+    graphics::plot(c(a_seq, 0, b_seq), pi_new, type = "h",
+                   ylab = expression(pi), xlab = "a or b",
+                   ylim = c(0, 1))
     llike_current <- t_succotash_llike_unif(pi_Z = pi_Z, lambda = lambda, alpha = alpha, Y = Y,
                                             a_seq = a_seq, b_seq = b_seq, sig_diag = sig_diag, nu = nu)
-    mtext(side = 3, paste("llike =", round(llike_current)))
+    graphics::mtext(side = 3, paste("llike =", round(llike_current)))
 
     em_index <- 1
     ldiff <- em_tol + 1
     zdiff <- 1
     Z_new <- Z_init
-    while(em_index < em_itermax & ldiff > em_tol ) {
+    while (em_index < em_itermax & ldiff > em_tol ) {
         llike_old <- llike_current
         Z_old <- Z_new
         pi_old <- pi_new
@@ -233,25 +234,28 @@ t_unif_em <- function(a_seq, b_seq, Y, alpha, sig_diag, nu, pi_init, Z_init, pi_
         ldiff <- abs(llike_current / llike_old - 1)
         zdiff <- sum(abs(Z_old - Z_new))
 
-        if(print_progress) {
+        if (print_progress) {
             cat(" Iter =", em_index, "\n")
             cat("ldiff =", ldiff, "\n")
             cat("zdiff =", zdiff, "\n\n")
-            par(mgp = c(1.5, 0.5, 0), mar = c(3, 3, 2, 0.5))
-            if(!is.null(true_Z)) {
-                par(mfrow = c(2,1))
-                lm_Z <- lm(Z_new ~ true_Z)
-                plot(true_Z, Z_new, xlab = "True Z", ylab = "Estimated Z")
-                abline(lm_Z, lty = 2, col = 2)
-                abline(0, 1)
-                legend("bottomright", c("Y = X", "Regression Line"),
-                       lty = c(1,2), col = c(1,2))
+            graphics::par(mgp = c(1.5, 0.5, 0), mar = c(3, 3, 2, 0.5))
+            if (!is.null(true_Z)) {
+                graphics::par(mfrow = c(2, 1))
+                lm_Z <- stats::lm(Z_new ~ true_Z)
+                graphics::plot(true_Z, Z_new, xlab = "True Z",
+                               ylab = "Estimated Z")
+                graphics::abline(lm_Z, lty = 2, col = 2)
+                graphics::abline(0, 1)
+                graphics::legend("bottomright",
+                                 c("Y = X", "Regression Line"),
+                                 lty = c(1, 2), col = c(1, 2))
             }
-            plot(c(a_seq, 0, b_seq), pi_new, type = "h", ylab = expression(hat(pi)[k]),
-                 xlab = "a or b", ylim = c(0,max(c(0.5, pi_new))))
-            mtext(side = 3, paste0("Iteration = ", em_index, ", llike = ",
+            graphics::plot(c(a_seq, 0, b_seq), pi_new, type = "h", ylab = expression(hat(pi)[k]),
+                           xlab = "a or b", ylim = c(0, max(c(0.5, pi_new))))
+            graphics::mtext(side = 3,
+                            paste0("Iteration = ", em_index, ", llike = ",
                                    round(llike_current, digits = 4)))
-            par(mfrow = c(1,1))
+            graphics::par(mfrow = c(1, 1))
         }
         em_index <- em_index + 1
     }
@@ -303,7 +307,7 @@ t_unif_em <- function(a_seq, b_seq, Y, alpha, sig_diag, nu, pi_init, Z_init, pi_
 t_succotash_unif_fixed <- function(pi_Z, lambda, alpha, Y, nu, a_seq, b_seq, sig_diag,
                                  print_ziter = TRUE, newt_itermax = 10, tol = 10 ^ -4) {
   M <- length(a_seq) + length(b_seq) + 1
-  ##p <- nrow(Y)
+  ## p <- nrow(Y)
   k <- length(pi_Z) - M
   pi_old <- pi_Z[1:M]
   if (k != 0) {
@@ -483,9 +487,9 @@ tgrad <- function(Z_old, sig_diag, Y, alpha, Tkj, a_seq, b_seq, nu) {
 
     ## calculate gradient
     dt_diff_left <- diag(1 / sqrt(sig_diag)) %*%
-        (dt(zero_means_left, df = nu) - dt(left_means, df = nu))
+        (stats::dt(zero_means_left, df = nu) - stats::dt(left_means, df = nu))
     dt_diff_right <- diag(1 / sqrt(sig_diag)) %*%
-        (dt(right_means, df = nu) - dt(zero_means_right, df = nu))
+        (stats::dt(right_means, df = nu) - stats::dt(zero_means_right, df = nu))
     dpratios_left <- dt_diff_left / pt_diff_left
     dpratios_right <- dt_diff_right / pt_diff_right
     zero_part <- (Y - az) / sig_diag
@@ -539,7 +543,7 @@ t_succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_dia
   left_means_zero <- diag(1 / sqrt(sig_diag)) %*% outer(c( (Y - az)), rep(0, length(a_seq)), "-")
   right_means <- diag(1 / sqrt(sig_diag)) %*% outer(c( (Y - az)), b_seq, "-")
   right_means_zero <- diag(1 / sqrt(sig_diag)) %*% outer(c( (Y - az)), rep(0, length(b_seq)), "-")
-  zero_means <- dnorm(Y, mean = az, sd = sqrt(sig_diag))
+  zero_means <- stats::dnorm(Y, mean = az, sd = sqrt(sig_diag))
 
   left_ispos <- left_means > 0
   right_ispos <- right_means > 0

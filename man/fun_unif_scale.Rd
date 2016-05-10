@@ -5,13 +5,15 @@
 \title{Criterion function for the scale parameter as an intermediate step
 to the EM algorithm when using uniform mixtures.}
 \usage{
-fun_unif_scale(scale_val, Y, az, sig_diag, Tkj, a_seq, b_seq,
-  llike_type = "normal")
+fun_unif_scale(scale_val, Y, az, sig_diag, Tkj, a_seq, b_seq)
 }
 \arguments{
+\item{scale_val}{A positive numeric. The variance inflation
+parameter.}
+
 \item{Y}{A p by 1 matrix of numerics. The data.}
 
-\item{az}{A p by 1 matrix. This is alpha %*% Z}
+\item{az}{A p by 1 matrix. This is \eqn{alpha Z}.}
 
 \item{sig_diag}{A p-vector of numerics. The estimated variances.}
 
@@ -22,8 +24,6 @@ uniforms.}
 
 \item{b_seq}{A vector of numerics. The non-zero right ends of the
 uniforms.}
-
-\item{like_type}{A character. Available options are "normal" and "t".}
 }
 \description{
 Criterion function for the scale parameter as an intermediate step

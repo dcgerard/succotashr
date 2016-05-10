@@ -27,14 +27,14 @@ test_that("uniform_succotash_em will actually run", {
                              b_seq = b_seq, print_ziter = TRUE,
                              var_scale = var_scale)
 
-    expect_true(all(pzout$pi_new > -10^-14))
+    expect_true(all(pzout$pi_new > -10 ^ -14))
     expect_true(all(pzout$pi_new < 1 + 10 ^ -14))
     expect_equal(sum(pzout$pi_new), 1)
 }
 )
 
 
-test_that("succotash_unif_fixed will actually run",{
+test_that("succotash_unif_fixed will actually run", {
   set.seed(1200)
   p <- 7
   k <- 2

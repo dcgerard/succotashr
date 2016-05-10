@@ -58,6 +58,11 @@ will give more mass to 0 than any other probability.}
 
 \item{var_scale}{A logical. Should we update the scaling on the
 variances (\code{TRUE}) or not (\code{FALSE}).}
+
+\item{optmethod}{Either coordinate ascent (\code{"coord"}) or an EM
+algorithm (\code{"em"}). Coordinate ascent is currently only
+implemented in the uniform mixtures case, for which it is the
+default.}
 }
 \description{
 EM algorithm for second step of SUCCOTASH
