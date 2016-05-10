@@ -2,7 +2,7 @@
 % Please edit documentation in R/uniform_coordinate.R
 \name{fit_succotash_unif_coord}
 \alias{fit_succotash_unif_coord}
-\title{Fixed point for uniform succotash when doing coordinate descent.}
+\title{Coordinate ascent algorithm for normal likelihood and mixtures of uniforms.}
 \usage{
 fit_succotash_unif_coord(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
   print_ziter = FALSE, newt_itermax = 100, tol = 10^-4,
@@ -42,6 +42,6 @@ method in updating Z.}
 variances (\code{TRUE}) or not (\code{FALSE}).}
 }
 \description{
-Fixed point for uniform succotash when doing coordinate descent.
+Coordinate ascent algorithm for normal likelihood and mixtures of uniforms.
 }
 

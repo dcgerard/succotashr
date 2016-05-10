@@ -15,7 +15,7 @@
 #'   \code{Z_new} A vector of length \code{k}. The update for the confounder
 #'   covariates.
 succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
-                            plot_new_ests = FALSE, var_scale = TRUE, pen = 0) {
+                            plot_new_ests = FALSE, var_scale = TRUE) {
     M <- length(tau_seq)
     p <- nrow(Y)
     k <- length(pi_Z) - M - var_scale ## var_scale is 0 if FALSE, 1 if TRUE
@@ -81,7 +81,7 @@ succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
             ## Update scale with Brent's method
             oout <- stats::optim(par = scale_val_new, fn = fun_scale, T = T,
                                  resid_vec = c(resid_vec), tau_seq = tau_seq,
-                                 sig_diag = sig_diag, pen = pen,
+                                 sig_diag = sig_diag,
                                  method = "Brent", lower = 0, upper = 10,
                                  control = list(fnscale = -1, maxit = 10))
             scale_val_new <- oout$par
@@ -128,14 +128,11 @@ succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
 #'     standard deviations, not variances.
 #' @param sig_diag A p-vector of positive numerics. The estimated
 #'     variances, not standard deviations.
-#' @param pen Now defunct. A numeric (usually positive) that adjusts the
-#'     variance. Doesn't work too well, so may be removed at any time.
 #'
-fun_scale <- function(scale_val, T, resid_vec, tau_seq, sig_diag, pen = 0) {
+fun_scale <- function(scale_val, T, resid_vec, tau_seq, sig_diag) {
     var_mat <- outer(scale_val * sig_diag, tau_seq ^ 2, "+")
     upper_vals <- t( (resid_vec ^ 2) * t(T))
-    final_val <- -1 * (sum(upper_vals / t(var_mat)) / 2 + sum(T * log(t(var_mat))) / 2) +
-        pen * log(scale_val)
+    final_val <- -1 * (sum(upper_vals / t(var_mat)) / 2 + sum(T * log(t(var_mat))) / 2)
     return(final_val)
 }
 
@@ -154,7 +151,7 @@ fun_scale <- function(scale_val, T, resid_vec, tau_seq, sig_diag, pen = 0) {
 #' @return \code{llike_new} A numeric. The value of the SUCCOTASH
 #'   log-likelihood.
 succotash_llike <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag, plot_new_ests = FALSE,
-                            var_scale = TRUE, pen = 0) {
+                            var_scale = TRUE) {
     M <- length(tau_seq)
     p <- nrow(Y)
     k <- length(pi_Z) - M - var_scale
@@ -188,7 +185,7 @@ succotash_llike <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag, plot_new_
     ##     prior_weight <- 0
     ## }
 
-    llike_new <- sum(log(rowSums(top_vals))) + pen * log(scale_val)
+    llike_new <- sum(log(rowSums(top_vals)))
     ## + prior_weight
     return(llike_new)
 }
@@ -254,7 +251,7 @@ succotash_llike <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag, plot_new_
 succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lambda = NULL,
                          Z_init = NULL, itermax = 1500, tol = 10 ^ -6, z_start_sd = 1,
                          print_note = FALSE, pi_init_type = "random", lambda_type = "zero_conc",
-                         lambda0 = 10, plot_new_ests = FALSE, var_scale = TRUE, pen = 0) {
+                         lambda0 = 10, plot_new_ests = FALSE, var_scale = TRUE) {
     if (print_note) {
         cat("Working on EM.\n")
     }
@@ -332,15 +329,14 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
                               alpha = alpha, Y = Y, tau_seq = tau_seq,
                               sig_diag = sig_diag,
                               plot_new_ests = plot_new_ests,
-                              var_scale = var_scale, pen = pen,
+                              var_scale = var_scale,
                               fixptfn = succotash_fixed,
                               objfn = succotash_llike,
                               control = list(maxiter = itermax, tol = tol))
                               ## from the SQUAREM package
 
     llike <- succotash_llike(pi_Z = sq_out$par, lambda = lambda, alpha = alpha, Y = Y,
-                             tau_seq = tau_seq, sig_diag = sig_diag, var_scale = var_scale,
-                             pen = pen)
+                             tau_seq = tau_seq, sig_diag = sig_diag, var_scale = var_scale)
 
     pi_vals <- sq_out$par[1:M]
     if (k != 0) {
@@ -421,9 +417,6 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
 #'     pi?
 #' @param var_scale A logical. Should we update the scaling on the
 #'     variances (\code{TRUE}) or not (\code{FALSE}).
-#' @param pen Defunct. A numeric (usually positive). The correction
-#'     term for the scaling factor. This doesn't work too well so may
-#'     be removed at any time.
 #'
 #' @return  \code{Z} A matrix  of dimension \code{k} by  \code{1}. The
 #'     estimates of the confounder covariates.
@@ -455,7 +448,7 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
                                   em_z_start_sd = 1,
                                   lambda_type = "zero_conc", lambda0 = 10,
                                   plot_new_ests = FALSE,
-                                  var_scale = TRUE, pen = 0) {
+                                  var_scale = TRUE) {
 
     ## @param em_pi_init_type How should we choose the initial values of
     ## \eqn{\pi}.  Possible values of \code{"random"},
@@ -476,8 +469,7 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
                            lambda_type = lambda_type,
                            lambda0 = lambda0,
                            plot_new_ests = plot_new_ests,
-                           var_scale = var_scale,
-                           pen = pen)
+                           var_scale = var_scale)
 
     if (num_em_runs > 1) {
         for (index in 2:num_em_runs) {
@@ -491,8 +483,7 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
                                    lambda_type = lambda_type,
                                    lambda0 = lambda0,
                                    plot_new_ests = plot_new_ests,
-                                   var_scale = var_scale,
-                                   pen = pen)
+                                   var_scale = var_scale)
             pi_diff <- sum(abs(em_new$pi_vals - em_out$pi_vals))
             z_diff <- sum(abs(em_new$Z - em_out$Z))
             if (em_out$llike < em_new$llike) {
@@ -610,9 +601,6 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
 #' @param var_scale A logical. Should we update the scaling on the
 #'     variances (\code{TRUE}) or not (\code{FALSE}). Only works for
 #'     the normal mixtures case right now. Defaults to \code{TRUE}.
-#' @param pen Now defunct. A numeric. The amount to penalize
-#'     by. Defaults to zero. This doesn't work too well and may be
-#'     removed at any time.
 #' @param two_step A logical. Should we run the two-step SUCCOTASH
 #'     procedure of inflating the variance (\code{TRUE}) or not
 #'     (\code{FALSE})? Defaults to \code{TRUE}.
@@ -675,7 +663,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                       tau_seq = NULL, em_pi_init = NULL,
                       plot_new_ests = FALSE, em_itermax = 200,
                       var_scale = TRUE, inflate_var = 1,
-                      optmethod = c("coord", "em"), pen = 0) {
+                      optmethod = c("coord", "em")) {
     ncol_x <- ncol(X)
 
     optmethod <- match.arg(optmethod,  c("coord", "em"))
@@ -802,8 +790,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                                                    tau_seq = tau_seq, em_pi_init = em_pi_init,
                                                    plot_new_ests = plot_new_ests,
                                                    em_itermax = em_itermax,
-                                                   var_scale = var_scale,
-                                                   pen = pen)
+                                                   var_scale = var_scale)
             if (two_step) {
                 new_scale <- suc_out_bland$scale_val * nrow(X) / (nrow(X) - k - ncol_x)
                 sig_diag_scaled <- sig_diag_scaled * new_scale # inflate variance
@@ -815,8 +802,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                                                  tau_seq = tau_seq, em_pi_init = em_pi_init,
                                                  plot_new_ests = plot_new_ests,
                                                  em_itermax = em_itermax,
-                                                 var_scale = FALSE, # assume scale known now.
-                                                 pen = 0)
+                                                 var_scale = FALSE) # assume scale known now.
                 suc_out$scale_val <- new_scale
                 suc_out$sig_diag_scaled <- sig_diag_scaled
             } else {

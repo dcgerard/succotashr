@@ -1,4 +1,4 @@
-#' Fixed point for uniform succotash when doing coordinate descent.
+#' Coordinate ascent algorithm for normal likelihood and mixtures of uniforms.
 #'
 #'
 #' @inheritParams succotash_unif_fixed

@@ -5,7 +5,7 @@
 \title{Objective function in intermediate step of EM algorithm when
 updating scale.}
 \usage{
-fun_scale(scale_val, T, resid_vec, tau_seq, sig_diag, pen = 0)
+fun_scale(scale_val, T, resid_vec, tau_seq, sig_diag)
 }
 \arguments{
 \item{scale_val}{A positive numeric. The multiplicative factor to
@@ -20,9 +20,6 @@ standard deviations, not variances.}
 
 \item{sig_diag}{A p-vector of positive numerics. The estimated
 variances, not standard deviations.}
-
-\item{pen}{Now defunct. A numeric (usually positive) that adjusts the
-variance. Doesn't work too well, so may be removed at any time.}
 }
 \description{
 Objective function in intermediate step of EM algorithm when

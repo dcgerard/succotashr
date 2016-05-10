@@ -8,7 +8,7 @@ succotash_em(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL,
   lambda = NULL, Z_init = NULL, itermax = 1500, tol = 10^-6,
   z_start_sd = 1, print_note = FALSE, pi_init_type = "random",
   lambda_type = "zero_conc", lambda0 = 10, plot_new_ests = FALSE,
-  var_scale = TRUE, pen = 0)
+  var_scale = TRUE)
 }
 \arguments{
 \item{Y}{A matrix of dimension \code{p} by \code{1}. These are the
@@ -76,10 +76,6 @@ pi?}
 
 \item{var_scale}{A logical. Should we update the scaling on the
 variances (\code{TRUE}) or not (\code{FALSE}).}
-
-\item{pen}{Defunct. A numeric (usually positive). The correction
-term for the scaling factor. This doesn't work too well so may
-be removed at any time.}
 }
 \value{
 \code{pi_vals} A vector of length \code{M}. The estimates

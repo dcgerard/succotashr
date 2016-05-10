@@ -5,7 +5,7 @@
 \title{The SUCCOTASH log-likelihood.}
 \usage{
 succotash_llike(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
-  plot_new_ests = FALSE, var_scale = TRUE, pen = 0)
+  plot_new_ests = FALSE, var_scale = TRUE)
 }
 \arguments{
 \item{pi_Z}{A vector. The first \code{M} values are the current
@@ -33,10 +33,6 @@ pi?}
 
 \item{var_scale}{A logical. Should we update the scaling on the
 variances (\code{TRUE}) or not (\code{FALSE}).}
-
-\item{pen}{Defunct. A numeric (usually positive). The correction
-term for the scaling factor. This doesn't work too well so may
-be removed at any time.}
 }
 \value{
 \code{llike_new} A numeric. The value of the SUCCOTASH
