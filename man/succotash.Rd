@@ -12,7 +12,7 @@ succotash(Y, X, k, sig_reg = 0.01, num_em_runs = 2, z_start_sd = 1,
   mix_type = "normal", likelihood = c("normal", "t"), lambda0 = 10,
   tau_seq = NULL, em_pi_init = NULL, plot_new_ests = FALSE,
   em_itermax = 200, var_scale = TRUE, inflate_var = 1,
-  optmethod = c("coord", "em"))
+  optmethod = c("coord", "em"), use_ols_se = FALSE)
 }
 \arguments{
 \item{Y}{An \code{n} by \code{p} matrix of response variables.}
@@ -94,6 +94,10 @@ here to play around with it.}
 algorithm (\code{"em"}). Coordinate ascent is currently only
 implemented in the uniform mixtures case, for which it is the
 default.}
+
+\item{use_ols_se}{A logical. Should we use the standard formulas
+for OLS of X on Y to get the estimates of the variances
+(\code{TRUE}) or not (\code{FALSE})}
 }
 \value{
 See \code{\link{succotash_given_alpha}} for details of output.

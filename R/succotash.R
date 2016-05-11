@@ -9,11 +9,11 @@
 #' @inheritParams succotash_em
 #' @inheritParams succotash_given_alpha
 #'
-#' @return \code{pi_new} A vector of length \code{M}. The update for the mixing
-#'   components.
-#'
-#'   \code{Z_new} A vector of length \code{k}. The update for the confounder
-#'   covariates.
+#' @return \code{pi_Z_new} A vector of numerics. The first M of which
+#'     are the new pi values and the last k of which are the new Z
+#'     values (if \code{var_scale = FALSE}). If \code{var_scale =
+#'     TRUE} then the last element is actually the new variance
+#'     inflation parameter.
 succotash_fixed <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
                             plot_new_ests = FALSE, var_scale = TRUE) {
     M <- length(tau_seq)
@@ -608,6 +608,9 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
 #'     algorithm (\code{"em"}). Coordinate ascent is currently only
 #'     implemented in the uniform mixtures case, for which it is the
 #'     default.
+#' @param use_ols_se A logical. Should we use the standard formulas
+#'     for OLS of X on Y to get the estimates of the variances
+#'     (\code{TRUE}) or not (\code{FALSE})
 #'
 #'
 #' @return See \code{\link{succotash_given_alpha}} for details of output.
@@ -663,7 +666,8 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                       tau_seq = NULL, em_pi_init = NULL,
                       plot_new_ests = FALSE, em_itermax = 200,
                       var_scale = TRUE, inflate_var = 1,
-                      optmethod = c("coord", "em")) {
+                      optmethod = c("coord", "em"),
+                      use_ols_se = FALSE) {
     ncol_x <- ncol(X)
 
     optmethod <- match.arg(optmethod,  c("coord", "em"))
@@ -679,6 +683,9 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
     ## multiply by sign so that it matches with beta_hat_ols
     Q <- qr.Q(qr_x, complete = TRUE) * sign(qr.R(qr_x)[ncol_x, ncol_x])
     Y_tilde <- crossprod(Q, Y)[ncol_x:nrow(Y), ]  # discard first q-1 rows.
+
+
+
 
 
     n <- nrow(Y_tilde) ## NOT the total number of observations, but
@@ -778,6 +785,11 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
         alpha_scaled <- NULL
     }
     sig_diag_scaled <- sig_diag / (fnorm_x ^ 2) * inflate_var ## this is se of betahat ols
+
+    if (use_ols_se) {
+        ols_var_estimates <- colMeans(Y_tilde[-1, ] ^ 2)
+        sig_diag_scaled   <- ols_var_estimates / (fnorm_x ^ 2) * inflate_var
+    }
 
     ## Fit succotash ---------------------------------------------------------
     if (likelihood == "normal") {

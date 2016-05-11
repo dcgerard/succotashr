@@ -26,7 +26,7 @@ fit_succotash_unif_coord <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_d
         Z_old <- matrix(pi_Z[(M + 1):(M + k)], nrow = k)
     }
 
-    assertthat::assert_that(length(lambda) == M)
+    assertthat::are_equal(length(lambda), M)
     assertthat::are_equal(sum(pi_old), 1)
     assertthat::assert_that(all(a_seq < 0))
     assertthat::assert_that(all(b_seq > 0))
@@ -80,12 +80,7 @@ fit_succotash_unif_coord <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_d
 
         ## update pi with ashr -------------------------------------------------------
         betahat <- Y - alpha %*% Z_new
-        if (var_scale) {
-            sebetahat <- sqrt(sig_diag * scale_val)
-        } else {
-            sebetahat <- sqrt(sig_diag)
-        }
-
+        sebetahat <- sqrt(sig_diag * scale_val)
 
         g <- ashr::unimix(pi_new, c(a_seq, rep(0, length(b_seq) + 1)),
                          c(rep(0, length(a_seq) + 1), b_seq))
@@ -123,6 +118,8 @@ fit_succotash_unif_coord <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_d
         ## cat("llike after ash:", llike_new, "\n")
         ## cat(" llike ash says:", ash_out$loglik, "\n")
 
+
+        ## Update scale_val with Brent's method --------------------------------------
 
         if (var_scale) {
             oout <- stats::optim(par = scale_val, fn = only_scale,
