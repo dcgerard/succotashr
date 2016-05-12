@@ -5,14 +5,14 @@
 \title{Surrogate and Confounder Correction Occuring Together with Adaptive
 SHrinkage.}
 \usage{
-succotash(Y, X, k, sig_reg = 0.01, num_em_runs = 2, z_start_sd = 1,
-  two_step = TRUE, fa_method = c("pca", "reg_mle", "quasi_mle", "homoPCA",
-  "pca_shrinkvar", "mod_fa", "flash_hetero", "non_homo", "non_hetero",
-  "non_shrinkvar"), lambda_type = "zero_conc", mix_type = "normal",
-  likelihood = c("normal", "t"), lambda0 = 10, tau_seq = NULL,
-  em_pi_init = NULL, plot_new_ests = FALSE, em_itermax = 200,
-  var_scale = TRUE, inflate_var = 1, optmethod = c("coord", "em"),
-  use_ols_se = FALSE)
+succotash(Y, X, k = NULL, sig_reg = 0.01, num_em_runs = 2,
+  z_start_sd = 1, two_step = TRUE, fa_method = c("pca", "reg_mle",
+  "quasi_mle", "homoPCA", "pca_shrinkvar", "mod_fa", "flash_hetero", "non_homo",
+  "non_hetero", "non_shrinkvar"), lambda_type = "zero_conc",
+  mix_type = "normal", likelihood = c("normal", "t"), lambda0 = 10,
+  tau_seq = NULL, em_pi_init = NULL, plot_new_ests = FALSE,
+  em_itermax = 200, var_scale = TRUE, inflate_var = 1,
+  optmethod = c("coord", "em"), use_ols_se = FALSE)
 }
 \arguments{
 \item{Y}{An \code{n} by \code{p} matrix of response variables.}
@@ -20,9 +20,10 @@ succotash(Y, X, k, sig_reg = 0.01, num_em_runs = 2, z_start_sd = 1,
 \item{X}{An \code{n} by \code{q} matrix of covariates. Only the
 variable in the last column is of interest.}
 
-\item{k}{An integer. The number of hidden confounders. This can be
-estimated, for example by the \code{num.sv} function in the
-\code{sva} package available on Bioconductor.}
+\item{k}{An integer. The number of hidden confounders. If
+\code{NULL} and \code{sva} is installed, this will be
+estimated, by the \code{num.sv} function in the \code{sva}
+package available on Bioconductor.}
 
 \item{sig_reg}{A numeric. If \code{fa_method} is \code{"reg_mle"},
 then this is the value of the regularization parameter.}

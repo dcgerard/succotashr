@@ -38,3 +38,24 @@ test_that("succotash_fixed will actually run with var_scale = TRUE", {
 
 }
 )
+
+
+test_that("k estimated when not provided", {
+    set.seed(491)
+    ## generate random data for succotash
+    p <- 23
+    n <- 11
+    k <- 5
+    q <- 2
+    X <- matrix(rnorm(q * n), nrow = n, ncol = q)
+    beta <- matrix(rnorm(q * p), nrow = q, ncol = p)
+    Z <- matrix(rnorm(k * n), nrow = n, ncol = k)
+    alpha <- matrix(rnorm(k * p), nrow = k, ncol = p)
+    E <- matrix(rnorm(n * p), nrow = n, ncol = p)
+    Y <- X %*% beta + Z %*% alpha + E
+
+    suc_out <- succotash(Y = Y, X = X, optmethod = "em")
+
+    expect_true(nrow(suc_out$Z) > 0)
+}
+)

@@ -39,7 +39,6 @@ The following packages are suggested:
 
 ``` r
 install.packages("cate")
-devtools::install_github("NKweiwang/flash")
 source("https://bioconductor.org/biocLite.R")
-biocLite("limma")
+biocLite(c("limma", "sva"))
 ```

@@ -575,9 +575,10 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
 #' @param Y An \code{n} by \code{p} matrix of response variables.
 #' @param X An \code{n} by \code{q} matrix of covariates. Only the
 #'     variable in the last column is of interest.
-#' @param k An integer. The number of hidden confounders. This can be
-#'     estimated, for example by the \code{num.sv} function in the
-#'     \code{sva} package available on Bioconductor.
+#' @param k An integer. The number of hidden confounders. If
+#'     \code{NULL} and \code{sva} is installed, this will be
+#'     estimated, by the \code{num.sv} function in the \code{sva}
+#'     package available on Bioconductor.
 #' @param sig_reg A numeric. If \code{fa_method} is \code{"reg_mle"},
 #'     then this is the value of the regularization parameter.
 #' @param num_em_runs An integer. The number of times we should run
@@ -679,7 +680,7 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
 #'   \code{\link{succotash_summaries}}.
 #'
 #'
-succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
+succotash <- function(Y, X, k = NULL, sig_reg = 0.01, num_em_runs = 2,
                       z_start_sd = 1, two_step = TRUE,
                       fa_method = c("pca", "reg_mle", "quasi_mle",
                                     "homoPCA", "pca_shrinkvar", "mod_fa",
@@ -703,14 +704,22 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
 
     likelihood <- match.arg(likelihood, c("normal", "t"))
 
+
+    ## Estimate number of hidden confounders with num.sv from sva package
+    if (is.null(k)) {
+        if (requireNamespace("sva", quietly = TRUE)) {
+            message("k not provided so using sva::num.sv()\nto estimate the number of hidden confounders")
+            k <- sva::num.sv(t(Y), mod = X, method = "be")
+        } else {
+            stop("k not provided and R package sva not installed.\nPlease first run\nsource(\"https://bioconductor.org/biocLite.R\"); biocLite(\"sva\")\nto install sva to be able to estimate the number of hidden confounders.")
+        }
+    }
+
+
     qr_x <- qr(X)
     ## multiply by sign so that it matches with beta_hat_ols
     Q <- qr.Q(qr_x, complete = TRUE) * sign(qr.R(qr_x)[ncol_x, ncol_x])
     Y_tilde <- crossprod(Q, Y)[ncol_x:nrow(Y), ]  # discard first q-1 rows.
-
-
-
-
 
     n <- nrow(Y_tilde) ## NOT the total number of observations, but
                        ## the total number of observations minus the
@@ -725,12 +734,12 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
             sig_diag <- rep(mean(Y_current ^ 2), ncol(Y_current))
             alpha <- NULL
         } else if (fa_method == "non_shrinkvar") {
-          Y_current <- Y_tilde[2:n, ]
-          mse_vec <- colMeans(Y_current ^ 2)
-          sv_out <- limma::squeezeVar(var = mse_vec, df = nrow(Y_current))
-          sig_diag <- sv_out$var.post
-          nu <- sv_out$df.prior
-          alpha <- NULL
+            Y_current <- Y_tilde[2:n, ]
+            mse_vec <- colMeans(Y_current ^ 2)
+            sv_out <- limma::squeezeVar(var = mse_vec, df = nrow(Y_current))
+            sig_diag <- sv_out$var.post
+            nu <- sv_out$df.prior
+            alpha <- NULL
         } else {
             ## no factor analysis
             Y_current <- Y_tilde[2:n, ]

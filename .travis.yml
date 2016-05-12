@@ -7,4 +7,3 @@ env:
 
 before_install:
   - Rscript -e "source('https://bioconductor.org/biocLite.R'); biocLite(c('limma', 'sva'))"
-  - Rscript -e 'install.packages("Rmosek")'
