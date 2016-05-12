@@ -17,7 +17,6 @@ Imports:
 Suggests:
     cate (>= 1.0.4),
     testthat,
-    flash,
     limma,
     flashr,
     Rmosek

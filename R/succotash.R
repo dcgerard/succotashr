@@ -590,8 +590,7 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
 #'     (\code{"reg_mle"}), two methods fromthe package \code{cate}:
 #'     the quasi-MLE (\code{"quasi_mle"}) from
 #'     \href{http://projecteuclid.org/euclid.aos/1334581749}{Bai and
-#'     Li (2012)}, just naive PCA (\code{"pca"}), homoscedastic FLASH
-#'     (\code{"flash"}), heteroscedastic FLASH
+#'     Li (2012)}, just naive PCA (\code{"pca"}), FLASH
 #'     (\code{"flash_hetero"}), homoscedastic PCA (\code{"homoPCA"}),
 #'     PCA followed by shrinking the variances using limma
 #'     (\code{"pca_shrinkvar"}), or moderated factor analysis
@@ -682,7 +681,7 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
 #'
 succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                       z_start_sd = 1, two_step = TRUE,
-                      fa_method = c("pca", "reg_mle", "quasi_mle", "flash",
+                      fa_method = c("pca", "reg_mle", "quasi_mle",
                                     "homoPCA", "pca_shrinkvar", "mod_fa",
                                     "flash_hetero", "non_homo", "non_hetero",
                                     "non_shrinkvar"),
@@ -697,7 +696,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
 
     optmethod <- match.arg(optmethod,  c("coord", "em"))
     fa_method <- match.arg(fa_method, c("pca", "reg_mle", "quasi_mle",
-                                        "flash", "homoPCA",
+                                        "homoPCA",
                                         "pca_shrinkvar", "mod_fa",
                                         "flash_hetero", "non_homo",
                                         "non_hetero", "non_shrinkvar"))
@@ -753,21 +752,6 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
         pca_out <- pca_naive(Y = Y_tilde[2:n, ], r = k)
         alpha <- pca_out$Gamma
         sig_diag <- pca_out$Sigma
-        nu <- n - 1
-    } else if (fa_method == "flash" & requireNamespace("flash", quietly = TRUE)) {
-        Y_current <- Y_tilde[2:n, ]
-        L_mat <- matrix(NA, nrow = nrow(Y_current), ncol = k)
-        F_mat <- matrix(NA, nrow = ncol(Y_current), ncol = k)
-        var_vec <- rep(NA, length = k)
-        for (conf_index in 1:k) {
-            flash_out <- flash::flash(Y_current)
-            Y_current <- Y_current - flash_out$l %*% t(flash_out$f)
-            L_mat[, conf_index] <- flash_out$l
-            F_mat[, conf_index] <- flash_out$f
-            var_vec[conf_index] <- flash_out$sigmae2
-        }
-        sig_diag <- rep(mean(var_vec), length = nrow(F_mat))
-        alpha <- F_mat
         nu <- n - 1
     } else if (fa_method == "flash_hetero" & requireNamespace("flashr", quietly = TRUE)) {
         ## flashr is currently a private repo and not accessible to the public
