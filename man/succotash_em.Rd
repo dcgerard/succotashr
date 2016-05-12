@@ -6,9 +6,10 @@
 \usage{
 succotash_em(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL,
   lambda = NULL, Z_init = NULL, itermax = 1500, tol = 10^-6,
-  z_start_sd = 1, print_note = FALSE, pi_init_type = "random",
-  lambda_type = "zero_conc", lambda0 = 10, plot_new_ests = FALSE,
-  var_scale = TRUE)
+  z_start_sd = 1, print_note = FALSE, pi_init_type = c("random",
+  "uniform", "zero_conc"), lambda_type = c("zero_conc", "ones"),
+  lambda0 = 10, plot_new_ests = FALSE, var_scale = TRUE,
+  optmethod = c("coord", "em"))
 }
 \arguments{
 \item{Y}{A matrix of dimension \code{p} by \code{1}. These are the
@@ -76,6 +77,9 @@ pi?}
 
 \item{var_scale}{A logical. Should we update the scaling on the
 variances (\code{TRUE}) or not (\code{FALSE}).}
+
+\item{optmethod}{Should we use coordinate ascent (\code{optmethod =
+"coord"}) or an EM algorithm (\code{optmethod = "em"}).}
 }
 \value{
 \code{pi_vals} A vector of length \code{M}. The estimates

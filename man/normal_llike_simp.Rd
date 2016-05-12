@@ -6,6 +6,25 @@
 \usage{
 normal_llike_simp(Z, Y, alpha, sig_diag, tau_seq, scale_val, pi_vals)
 }
+\arguments{
+\item{Z}{A k by 1 matrix of numerics. The hidden confounders.}
+
+\item{Y}{A matrix of dimension \code{p} by \code{1}. These are the
+observed regression coefficients of the observed variables.}
+
+\item{alpha}{A matrix. This is of dimension \code{p} by \code{k}
+and are the coefficients to the confounding variables.}
+
+\item{sig_diag}{A vector of length \code{p} containing the
+variances of the observations.}
+
+\item{tau_seq}{A vector of length \code{M} containing the standard
+deviations (not variances) of the mixing distributions.}
+
+\item{scale_val}{A positive numeric. The variance scaling parameter.}
+
+\item{pi_vals}{A vector of numerics that sums to 1. The mixing proportions.}
+}
 \description{
 Me being super careful in calculating the normal mixtures likelihood.
 }

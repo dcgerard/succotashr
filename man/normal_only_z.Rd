@@ -8,12 +8,25 @@ optim.}
 normal_only_z(Z, pi_vals, scale_val, lambda, alpha, Y, tau_seq, sig_diag)
 }
 \arguments{
-\item{Z}{A k by 1 matrix of numerics.}
+\item{Z}{A k by 1 matrix of numerics. The hidden confounders.}
 
-\item{pi_vals}{An M vector of numerics that sum to one.}
+\item{pi_vals}{A vector of numerics that sums to 1. The mixing proportions.}
 
-\item{scale_val}{A positive numeric. The variance inflation
-parameter.}
+\item{scale_val}{A positive numeric. The variance scaling parameter.}
+
+\item{lambda}{A vector of numerics. The penalty terms.}
+
+\item{alpha}{A matrix. This is of dimension \code{p} by \code{k}
+and are the coefficients to the confounding variables.}
+
+\item{Y}{A matrix of dimension \code{p} by \code{1}. These are the
+observed regression coefficients of the observed variables.}
+
+\item{tau_seq}{A vector of length \code{M} containing the standard
+deviations (not variances) of the mixing distributions.}
+
+\item{sig_diag}{A vector of length \code{p} containing the
+variances of the observations.}
 }
 \description{
 Wrapper for \code{\link{succotash_llike}}, but useful when calling

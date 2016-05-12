@@ -67,6 +67,9 @@ default.}
 
 \item{likelihood}{Which likelihood should we use? Normal
 (\code{"normal"}) or t (\code{"t"})?}
+
+\item{df}{The degrees of freedom of the the t-likelihood if
+\code{likleihood = "t"}.}
 }
 \description{
 EM algorithm for second step of SUCCOTASH

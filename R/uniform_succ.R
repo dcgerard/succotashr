@@ -514,6 +514,8 @@ succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
 #' @param sig_diag A vector of the variances of \code{Y}.
 #' @param var_scale A logical. Should we update the scaling on the
 #'     variances (\code{TRUE}) or not (\code{FALSE}).
+#' @param df The degrees of freedom of the the t-likelihood if
+#'     \code{likleihood = "t"}.
 #' @inheritParams succotash
 #'
 #' @seealso \code{\link{succotash_llike_unif}}

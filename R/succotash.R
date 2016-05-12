@@ -250,8 +250,15 @@ succotash_llike <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag, plot_new_
 #'   mixing distribution.
 succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lambda = NULL,
                          Z_init = NULL, itermax = 1500, tol = 10 ^ -6, z_start_sd = 1,
-                         print_note = FALSE, pi_init_type = "random", lambda_type = "zero_conc",
-                         lambda0 = 10, plot_new_ests = FALSE, var_scale = TRUE) {
+                         print_note = FALSE, pi_init_type = c("random", "uniform", "zero_conc"),
+                         lambda_type = c("zero_conc", "ones"),
+                         lambda0 = 10, plot_new_ests = FALSE, var_scale = TRUE,
+                         optmethod = c("coord", "em")) {
+
+    optmethod    <- match.arg(optmethod, c("coord", "em"))
+    pi_init_type <- match.arg(pi_init_type, c("random", "uniform", "zero_conc"))
+    lambda_type  <- match.arg(lambda_type,  c("zero_conc", "ones"))
+
     if (print_note) {
         cat("Working on EM.\n")
     }
@@ -325,28 +332,40 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
         pi_Z <- c(pi_init, Z_init, 1)
     }
 
-    sq_out <- SQUAREM::fpiter(par = pi_Z, lambda = lambda,
-                              alpha = alpha, Y = Y, tau_seq = tau_seq,
-                              sig_diag = sig_diag,
-                              plot_new_ests = plot_new_ests,
-                              var_scale = var_scale,
-                              fixptfn = succotash_fixed,
-                              objfn = succotash_llike,
-                              control = list(maxiter = itermax, tol = tol))
-                              ## from the SQUAREM package
+    if (optmethod == "em") {
+        sq_out <- SQUAREM::fpiter(par = pi_Z, lambda = lambda,
+                                  alpha = alpha, Y = Y, tau_seq = tau_seq,
+                                  sig_diag = sig_diag,
+                                  plot_new_ests = plot_new_ests,
+                                  var_scale = var_scale,
+                                  fixptfn = succotash_fixed,
+                                  objfn = succotash_llike,
+                                  control = list(maxiter = itermax, tol = tol))
+        ## from the SQUAREM package
+        pi_Z_new <- sq_out$par
+    } else if (optmethod == "coord") {
+        coord_out <- normal_coord(pi_Z = pi_Z, lambda = lambda,
+                                  alpha = alpha, Y = Y,
+                                  tau_seq = tau_seq,
+                                  sig_diag = sig_diag,
+                                  plot_new_ests = plot_new_ests,
+                                  var_scale = var_scale,
+                                  itermax = itermax, tol = tol)
+        pi_Z_new <- coord_out$pi_Z
+    }
 
-    llike <- succotash_llike(pi_Z = sq_out$par, lambda = lambda, alpha = alpha, Y = Y,
+    llike <- succotash_llike(pi_Z = pi_Z_new, lambda = lambda, alpha = alpha, Y = Y,
                              tau_seq = tau_seq, sig_diag = sig_diag, var_scale = var_scale)
 
-    pi_vals <- sq_out$par[1:M]
+    pi_vals <- pi_Z_new[1:M]
     if (k != 0) {
-        Z <- matrix(sq_out$par[(M + 1):(M + k)], nrow = k)
+        Z <- matrix(pi_Z_new[(M + 1):(M + k)], nrow = k)
     } else {
         Z <- NULL
     }
 
     if (var_scale) {
-        scale_val <- sq_out$par[length(sq_out$par)]
+        scale_val <- pi_Z_new[length(pi_Z_new)]
     } else {
         scale_val <- 1
     }
@@ -417,6 +436,8 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
 #'     pi?
 #' @param var_scale A logical. Should we update the scaling on the
 #'     variances (\code{TRUE}) or not (\code{FALSE}).
+#' @param optmethod Should we use coordinate ascent (\code{optmethod =
+#'     "coord"}) or an EM algorithm (\code{optmethod = "em"}).
 #'
 #' @return  \code{Z} A matrix  of dimension \code{k} by  \code{1}. The
 #'     estimates of the confounder covariates.
@@ -448,7 +469,9 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
                                   em_z_start_sd = 1,
                                   lambda_type = "zero_conc", lambda0 = 10,
                                   plot_new_ests = FALSE,
-                                  var_scale = TRUE) {
+                                  var_scale = TRUE, optmethod = c("coord", "em")) {
+
+    optmethod = match.arg(optmethod, c("coord", "em"))
 
     ## @param em_pi_init_type How should we choose the initial values of
     ## \eqn{\pi}.  Possible values of \code{"random"},
@@ -469,7 +492,8 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
                            lambda_type = lambda_type,
                            lambda0 = lambda0,
                            plot_new_ests = plot_new_ests,
-                           var_scale = var_scale)
+                           var_scale = var_scale,
+                           optmethod = optmethod)
 
     if (num_em_runs > 1) {
         for (index in 2:num_em_runs) {
@@ -483,7 +507,8 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
                                    lambda_type = lambda_type,
                                    lambda0 = lambda0,
                                    plot_new_ests = plot_new_ests,
-                                   var_scale = var_scale)
+                                   var_scale = var_scale,
+                                   optmethod = optmethod)
             pi_diff <- sum(abs(em_new$pi_vals - em_out$pi_vals))
             z_diff <- sum(abs(em_new$Z - em_out$Z))
             if (em_out$llike < em_new$llike) {
@@ -797,29 +822,37 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
         if (likelihood == "t") {
             stop("normal mixtures with t-likelihood not implemented")
         } else if (optmethod == "coord") {
-            stop("coordinate ascent with normal likelihood not implemented yet")
+            message("optmethod = \"em\" works a little better for normal likelihood,\nbut here goes nothing!")
         }
-        suc_out_bland <- succotash_given_alpha(Y = Y1_scaled, alpha = alpha_scaled,
+        suc_out_bland <- succotash_given_alpha(Y = Y1_scaled,
+                                               alpha = alpha_scaled,
                                                sig_diag = sig_diag_scaled,
                                                num_em_runs = num_em_runs,
                                                em_z_start_sd = z_start_sd,
-                                               lambda_type = lambda_type, lambda0 = lambda0,
-                                               tau_seq = tau_seq, em_pi_init = em_pi_init,
+                                               lambda_type = lambda_type,
+                                               lambda0 = lambda0,
+                                               tau_seq = tau_seq,
+                                               em_pi_init = em_pi_init,
                                                plot_new_ests = plot_new_ests,
                                                em_itermax = em_itermax,
-                                               var_scale = var_scale)
+                                               var_scale = var_scale,
+                                               optmethod = optmethod)
         if (two_step) {
             new_scale <- suc_out_bland$scale_val * nrow(X) / (nrow(X) - k - ncol_x)
             sig_diag_scaled <- sig_diag_scaled * new_scale # inflate variance
-            suc_out <- succotash_given_alpha(Y = Y1_scaled, alpha = alpha_scaled,
+            suc_out <- succotash_given_alpha(Y = Y1_scaled,
+                                             alpha = alpha_scaled,
                                              sig_diag = sig_diag_scaled,
                                              num_em_runs = num_em_runs,
                                              em_z_start_sd = z_start_sd,
-                                             lambda_type = lambda_type, lambda0 = lambda0,
-                                             tau_seq = tau_seq, em_pi_init = em_pi_init,
+                                             lambda_type = lambda_type,
+                                             lambda0 = lambda0,
+                                             tau_seq = tau_seq,
+                                             em_pi_init = em_pi_init,
                                              plot_new_ests = plot_new_ests,
                                              em_itermax = em_itermax,
-                                             var_scale = FALSE) # assume scale known now.
+                                             var_scale = FALSE,
+                                             optmethod = optmethod)
             suc_out$scale_val <- new_scale
             suc_out$sig_diag_scaled <- sig_diag_scaled
         } else {
@@ -837,7 +870,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                                                   var_scale = var_scale,
                                                   optmethod = optmethod,
                                                   likelihood = likelihood,
-                                                  df = df)
+                                                  df = nu)
         if (two_step) {
             new_scale <- suc_out_bland$scale_val * nrow(X) / (nrow(X) - k - ncol_x)
             sig_diag_scaled <- sig_diag_scaled * new_scale # inflate variance
@@ -851,7 +884,7 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
                                                 var_scale = FALSE,
                                                 optmethod = optmethod,
                                                 likelihood = likelihood,
-                                                df = df)
+                                                df = nu)
             suc_out$scale_val <- new_scale
             suc_out$sig_diag_scaled <- sig_diag_scaled
         } else {

@@ -2,6 +2,9 @@
 #'
 #' @inheritParams succotash_fixed
 #' @inheritParams succotash_given_alpha
+#' @param itermax A positive integer. The maximum number of coordinate
+#'     ascent steps to perform.
+#' @param tol A positive numeric. The stopping criterion.
 #'
 normal_coord <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
                          plot_new_ests = FALSE, var_scale = TRUE,
@@ -23,12 +26,16 @@ normal_coord <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
     assertthat::are_equal(sum(pi_new), 1)
     assertthat::are_equal(length(lambda), M)
     assertthat::assert_that(all(tau_seq >= 0))
+    assertthat::are_equal(ncol(alpha), k)
+    assertthat::are_equal(p, nrow(alpha))
 
     llike_new <- succotash_llike(pi_Z = pi_Z, lambda = lambda,
                                  alpha = alpha, Y = Y,
                                  tau_seq = tau_seq,
                                  sig_diag = sig_diag,
                                  var_scale = var_scale)
+
+    ## cat("first llike", llike_new, "\n")
     llike_vec <- llike_new
 
     err <- tol + 1
@@ -41,14 +48,15 @@ normal_coord <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
 
         ## Update Z ---------------------------------------------------------
         optim_out <- stats::optim(par = Z_new, fn = normal_only_z,
-                                  gr = normal_llike_grad,
+                                  lambda = lambda,
+                                  ## gr = normal_llike_grad,
                                   scale_val = scale_val,
                                   pi_vals = pi_new,
                                   alpha = alpha, Y = Y,
                                   tau_seq = tau_seq,
                                   sig_diag = sig_diag,
                                   method = "BFGS",
-                                  control = list(fnscale = -1, maxit = 50, reltol = 10 ^ -4))
+                                  control = list(fnscale = -1))
         Z_new <- optim_out$par
 
         if (var_scale) {
@@ -57,12 +65,12 @@ normal_coord <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
             pi_Z <- c(pi_new, optim_out$par)
         }
 
-        cat("llike after Z:", optim_out$value, "\n")
+        ## cat("llike after Z:", optim_out$value, "\n")
         llike_new <- optim_out$value
         llike_vec <- c(llike_vec, llike_new)
 
         ## Update pi with ashr --------------------------------------------
-        betahat <- Y - alpha %*% Z
+        betahat <- Y - alpha %*% Z_new
         sebetahat <- sqrt(sig_diag * scale_val)
         g <- ashr::normalmix(pi = pi_new, mean = rep(0, length = M), sd = tau_seq)
 
@@ -87,12 +95,12 @@ normal_coord <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
             pi_Z <- c(pi_new, Z_new)
         }
 
-        llike_new <- succotash_llike(pi_Z = pi_Z, lambda = lambda,
-                                     alpha = alpha, Y = Y,
-                                     tau_seq = tau_seq,
-                                     sig_diag = sig_diag,
-                                     var_scale = var_scale)
-        cat("llike after ash:", llike_new, "\n")
+        ## llike_new <- succotash_llike(pi_Z = pi_Z, lambda = lambda,
+        ##                              alpha = alpha, Y = Y,
+        ##                              tau_seq = tau_seq,
+        ##                              sig_diag = sig_diag,
+        ##                              var_scale = var_scale)
+        ## cat("llike after ash:", llike_new, "\n")
 
 
         ## Update scale_val with Brent's method -----------------------------------------
@@ -118,15 +126,14 @@ normal_coord <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag,
 #' Wrapper for \code{\link{succotash_llike}}, but useful when calling
 #' optim.
 #'
-#' @inheritParams succotash_llike
-#' @param Z A k by 1 matrix of numerics.
-#' @param pi_vals An M vector of numerics that sum to one.
-#' @param scale_val A positive numeric. The variance inflation
-#'     parameter.
-#'
+#' @inheritParams normal_llike_simp
+#' @param lambda A vector of numerics. The penalty terms.
 normal_only_z <- function(Z, pi_vals, scale_val, lambda, alpha, Y,
                           tau_seq, sig_diag) {
     pi_Z <- c(pi_vals, Z, scale_val)
+
+    assertthat::are_equal(length(pi_vals), length(lambda))
+
     llike_new <- succotash_llike(pi_Z = pi_Z, lambda = lambda,
                                  alpha = alpha, Y = Y,
                                  tau_seq = tau_seq,
@@ -137,8 +144,10 @@ normal_only_z <- function(Z, pi_vals, scale_val, lambda, alpha, Y,
 
 #' Gradient of the log-likelihood wrt Z.
 #'
-#'
-normal_llike_grad <- function(Z, Y, alpha, sig_diag, tau_seq, scale_val, pi_vals) {
+#' @inheritParams normal_llike_simp
+#' @param lambda Not used here, but needed for optim.
+normal_llike_grad <- function(Z, Y, alpha, sig_diag, tau_seq, scale_val, pi_vals,
+                              lambda = NULL) {
 
     p <- nrow(Y)
     k <- nrow(Z)
@@ -158,6 +167,14 @@ normal_llike_grad <- function(Z, Y, alpha, sig_diag, tau_seq, scale_val, pi_vals
     top_vals <- rowSums(dlike_mat)
     bottom_vals <- rowSums(like_mat)
 
+    ## A test to make sure got bottom_vals correct. remove later --------------
+    llike2 <- normal_llike_simp(Z = Z, Y = Y, alpha = alpha, sig_diag = sig_diag,
+                                 tau_seq = tau_seq, scale_val = scale_val,
+                                 pi_vals = pi_vals)
+    assertthat::are_equal(llike2, sum(log(bottom_vals)))
+    cat(llike2, "\n")
+    ## ------------------------------------------------------------------------
+
     weight_vec <- top_vals / bottom_vals
 
     alpha_weighted <- diag(weight_vec) %*% alpha
@@ -168,6 +185,19 @@ normal_llike_grad <- function(Z, Y, alpha, sig_diag, tau_seq, scale_val, pi_vals
 }
 
 #' Me being super careful in calculating the normal mixtures likelihood.
+#'
+#' @param Y A matrix of dimension \code{p} by \code{1}. These are the
+#'     observed regression coefficients of the observed variables.
+#' @param alpha A matrix. This is of dimension \code{p} by \code{k}
+#'     and are the coefficients to the confounding variables.
+#' @param sig_diag A vector of length \code{p} containing the
+#'     variances of the observations.
+#' @param tau_seq A vector of length \code{M} containing the standard
+#'     deviations (not variances) of the mixing distributions.
+#' @param Z A k by 1 matrix of numerics. The hidden confounders.
+#' @param scale_val A positive numeric. The variance scaling parameter.
+#' @param pi_vals A vector of numerics that sums to 1. The mixing proportions.
+#'
 normal_llike_simp <- function(Z, Y, alpha, sig_diag, tau_seq, scale_val, pi_vals) {
 
     p <- nrow(Y)

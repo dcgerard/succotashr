@@ -4,7 +4,29 @@
 \alias{normal_llike_grad}
 \title{Gradient of the log-likelihood wrt Z.}
 \usage{
-normal_llike_grad(Z, Y, alpha, sig_diag, tau_seq, scale_val, pi_vals)
+normal_llike_grad(Z, Y, alpha, sig_diag, tau_seq, scale_val, pi_vals,
+  lambda = NULL)
+}
+\arguments{
+\item{Z}{A k by 1 matrix of numerics. The hidden confounders.}
+
+\item{Y}{A matrix of dimension \code{p} by \code{1}. These are the
+observed regression coefficients of the observed variables.}
+
+\item{alpha}{A matrix. This is of dimension \code{p} by \code{k}
+and are the coefficients to the confounding variables.}
+
+\item{sig_diag}{A vector of length \code{p} containing the
+variances of the observations.}
+
+\item{tau_seq}{A vector of length \code{M} containing the standard
+deviations (not variances) of the mixing distributions.}
+
+\item{scale_val}{A positive numeric. The variance scaling parameter.}
+
+\item{pi_vals}{A vector of numerics that sums to 1. The mixing proportions.}
+
+\item{lambda}{Not used here, but needed for optim.}
 }
 \description{
 Gradient of the log-likelihood wrt Z.

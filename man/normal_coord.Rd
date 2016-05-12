@@ -33,6 +33,11 @@ pi?}
 
 \item{var_scale}{A logical. Should we update the scaling on the
 variances (\code{TRUE}) or not (\code{FALSE}).}
+
+\item{itermax}{A positive integer. The maximum number of coordinate
+ascent steps to perform.}
+
+\item{tol}{A positive numeric. The stopping criterion.}
 }
 \description{
 Coordinate ascent for normal mixtures with normal likelihood.

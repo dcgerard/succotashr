@@ -2,11 +2,10 @@ library(succotashr)
 context("Test normal coordinate ascent")
 
 test_that("normal_coord will run", {
-    skip("normal_coord not working yet")
-    set.seed(7999)
+    set.seed(79)
     p <- 101
-    k <- 20
-    m <- 10
+    k <- 19
+    m <- 3
     lambda <- rep(1, length = m) ## nullpi weight
     scale_val <- 1
     pi_vals <- c(0.5, 0.3, 0.2)
@@ -29,17 +28,17 @@ test_that("normal_coord will run", {
     em_out <- succotash_em(Y = Y, alpha = alpha, sig_diag = sig_diag,
                            tau_seq = tau_seq, pi_init = pi_vals,
                            lambda = lambda, Z_init = Z_init,
-                           var_scale = var_scale)
+                           var_scale = var_scale, optmethod = "em")
 
-    succotash_llike(pi_Z = coord_out$pi_Z, lambda = lambda,
-                    alpha = alpha, Y = Y, tau_seq = tau_seq,
-                    sig_diag = sig_diag, var_scale = var_scale)
+    llike1 <- succotash_llike(pi_Z = coord_out$pi_Z, lambda = lambda,
+                              alpha = alpha, Y = Y, tau_seq = tau_seq,
+                              sig_diag = sig_diag, var_scale = var_scale)
 
-    succotash_llike(pi_Z = c(em_out$pi_vals, em_out$Z),
-                    lambda = lambda,
-                    alpha = alpha, Y = Y, tau_seq = tau_seq,
-                    sig_diag = sig_diag, var_scale = var_scale)
-
+    llike2 <- succotash_llike(pi_Z = c(em_out$pi_vals, em_out$Z),
+                              lambda = lambda,
+                              alpha = alpha, Y = Y, tau_seq = tau_seq,
+                              sig_diag = sig_diag, var_scale = var_scale)
+    expect_equal(llike1, llike2, tol = 10 ^ -4)
 
 }
 )
