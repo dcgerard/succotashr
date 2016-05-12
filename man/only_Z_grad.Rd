@@ -4,7 +4,8 @@
 \alias{only_Z_grad}
 \title{Wrapper for \code{\link{unif_grad_simp}}, but useful for optim where only update Z.}
 \usage{
-only_Z_grad(Z, pi_vals, scale_val, lambda, alpha, Y, a_seq, b_seq, sig_diag)
+only_Z_grad(Z, pi_vals, scale_val, lambda, alpha, Y, a_seq, b_seq, sig_diag,
+  likelihood = "normal", df = NULL)
 }
 \arguments{
 \item{Z}{A k by 1 matrix of numerics. The confounders.}
@@ -30,6 +31,11 @@ endpoints of the mixing uniforms.}
 
 \item{sig_diag}{A vector of length \code{p} containing the variances
 of the observations.}
+
+\item{likelihood}{Can be \code{"normal"} or \code{"t"}.}
+
+\item{df}{A positive numeric. The degrees of freedom if the
+likelihood is t.}
 }
 \description{
 Wrapper for \code{\link{unif_grad_simp}}, but useful for optim where only update Z.

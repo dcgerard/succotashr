@@ -786,82 +786,94 @@ succotash <- function(Y, X, k, sig_reg = 0.01, num_em_runs = 2,
     }
     sig_diag_scaled <- sig_diag / (fnorm_x ^ 2) * inflate_var ## this is se of betahat ols
 
+    ## simple OLS variance estimates
     if (use_ols_se) {
         ols_var_estimates <- colMeans(Y_tilde[-1, ] ^ 2)
         sig_diag_scaled   <- ols_var_estimates / (fnorm_x ^ 2) * inflate_var
     }
 
     ## Fit succotash ---------------------------------------------------------
-    if (likelihood == "normal") {
-        if (mix_type == "normal") {
-            suc_out_bland <- succotash_given_alpha(Y = Y1_scaled, alpha = alpha_scaled,
-                                                   sig_diag = sig_diag_scaled,
-                                                   num_em_runs = num_em_runs,
-                                                   em_z_start_sd = z_start_sd,
-                                                   lambda_type = lambda_type, lambda0 = lambda0,
-                                                   tau_seq = tau_seq, em_pi_init = em_pi_init,
-                                                   plot_new_ests = plot_new_ests,
-                                                   em_itermax = em_itermax,
-                                                   var_scale = var_scale)
-            if (two_step) {
-                new_scale <- suc_out_bland$scale_val * nrow(X) / (nrow(X) - k - ncol_x)
-                sig_diag_scaled <- sig_diag_scaled * new_scale # inflate variance
-                suc_out <- succotash_given_alpha(Y = Y1_scaled, alpha = alpha_scaled,
-                                                 sig_diag = sig_diag_scaled,
-                                                 num_em_runs = num_em_runs,
-                                                 em_z_start_sd = z_start_sd,
-                                                 lambda_type = lambda_type, lambda0 = lambda0,
-                                                 tau_seq = tau_seq, em_pi_init = em_pi_init,
-                                                 plot_new_ests = plot_new_ests,
-                                                 em_itermax = em_itermax,
-                                                 var_scale = FALSE) # assume scale known now.
-                suc_out$scale_val <- new_scale
-                suc_out$sig_diag_scaled <- sig_diag_scaled
-            } else {
-                suc_out <- suc_out_bland
-                suc_out$sig_diag_scaled <- c(sig_diag_scaled) * suc_out$scale_val
-            }
-        } else if (mix_type == "uniform") {
-            suc_out_bland <- uniform_succ_given_alpha(Y = Y1_scaled,
-                                                      alpha = alpha_scaled,
-                                                      sig_diag = sig_diag_scaled,
-                                                      num_em_runs = num_em_runs,
-                                                      em_z_start_sd = z_start_sd,
-                                                      lambda_type = lambda_type,
-                                                      em_itermax = em_itermax,
-                                                      var_scale = var_scale,
-                                                      optmethod = optmethod)
-            if (two_step) {
-                new_scale <- suc_out_bland$scale_val * nrow(X) / (nrow(X) - k - ncol_x)
-                sig_diag_scaled <- sig_diag_scaled * new_scale # inflate variance
-                suc_out <- uniform_succ_given_alpha(Y = Y1_scaled,
-                                                    alpha = alpha_scaled,
-                                                    sig_diag = sig_diag_scaled,
-                                                    num_em_runs = num_em_runs,
-                                                    em_z_start_sd = z_start_sd,
-                                                    lambda_type = lambda_type,
-                                                    em_itermax = em_itermax,
-                                                    var_scale = FALSE,
-                                                    optmethod = optmethod)
-                suc_out$scale_val <- new_scale
-                suc_out$sig_diag_scaled <- sig_diag_scaled
-            } else {
-                suc_out <- suc_out_bland
-                suc_out$sig_diag_scaled <- c(sig_diag_scaled) * suc_out$scale_val
-            }
+    if (mix_type == "normal") {
+        if (likelihood == "t") {
+            stop("normal mixtures with t-likelihood not implemented")
+        } else if (optmethod == "coord") {
+            stop("coordinate ascent with normal likelihood not implemented yet")
         }
-    } else if (likelihood == "t") {
-        suc_out <- t_uniform_succ_given_alpha(Y = Y1_scaled,
-                                              alpha = alpha_scaled,
-                                              nu = nu,
-                                              sig_diag = sig_diag_scaled,
-                                              num_em_runs = num_em_runs,
-                                              em_z_start_sd = z_start_sd,
-                                              lambda_type = lambda_type,
-                                              em_itermax = em_itermax,
-                                              print_progress = FALSE)
-        suc_out$sig_diag_scaled <- sig_diag_scaled
+        suc_out_bland <- succotash_given_alpha(Y = Y1_scaled, alpha = alpha_scaled,
+                                               sig_diag = sig_diag_scaled,
+                                               num_em_runs = num_em_runs,
+                                               em_z_start_sd = z_start_sd,
+                                               lambda_type = lambda_type, lambda0 = lambda0,
+                                               tau_seq = tau_seq, em_pi_init = em_pi_init,
+                                               plot_new_ests = plot_new_ests,
+                                               em_itermax = em_itermax,
+                                               var_scale = var_scale)
+        if (two_step) {
+            new_scale <- suc_out_bland$scale_val * nrow(X) / (nrow(X) - k - ncol_x)
+            sig_diag_scaled <- sig_diag_scaled * new_scale # inflate variance
+            suc_out <- succotash_given_alpha(Y = Y1_scaled, alpha = alpha_scaled,
+                                             sig_diag = sig_diag_scaled,
+                                             num_em_runs = num_em_runs,
+                                             em_z_start_sd = z_start_sd,
+                                             lambda_type = lambda_type, lambda0 = lambda0,
+                                             tau_seq = tau_seq, em_pi_init = em_pi_init,
+                                             plot_new_ests = plot_new_ests,
+                                             em_itermax = em_itermax,
+                                             var_scale = FALSE) # assume scale known now.
+            suc_out$scale_val <- new_scale
+            suc_out$sig_diag_scaled <- sig_diag_scaled
+        } else {
+            suc_out <- suc_out_bland
+            suc_out$sig_diag_scaled <- c(sig_diag_scaled) * suc_out$scale_val
+        }
+    } else if (mix_type == "uniform") {
+        suc_out_bland <- uniform_succ_given_alpha(Y = Y1_scaled,
+                                                  alpha = alpha_scaled,
+                                                  sig_diag = sig_diag_scaled,
+                                                  num_em_runs = num_em_runs,
+                                                  em_z_start_sd = z_start_sd,
+                                                  lambda_type = lambda_type,
+                                                  em_itermax = em_itermax,
+                                                  var_scale = var_scale,
+                                                  optmethod = optmethod,
+                                                  likelihood = likelihood,
+                                                  df = df)
+        if (two_step) {
+            new_scale <- suc_out_bland$scale_val * nrow(X) / (nrow(X) - k - ncol_x)
+            sig_diag_scaled <- sig_diag_scaled * new_scale # inflate variance
+            suc_out <- uniform_succ_given_alpha(Y = Y1_scaled,
+                                                alpha = alpha_scaled,
+                                                sig_diag = sig_diag_scaled,
+                                                num_em_runs = num_em_runs,
+                                                em_z_start_sd = z_start_sd,
+                                                lambda_type = lambda_type,
+                                                em_itermax = em_itermax,
+                                                var_scale = FALSE,
+                                                optmethod = optmethod,
+                                                likelihood = likelihood,
+                                                df = df)
+            suc_out$scale_val <- new_scale
+            suc_out$sig_diag_scaled <- sig_diag_scaled
+        } else {
+            suc_out <- suc_out_bland
+            suc_out$sig_diag_scaled <- c(sig_diag_scaled) * suc_out$scale_val
+        }
     }
+
+    ## DEFUNCT CODE -------------------------------------------------------
+    ## } else if (likelihood == "t") {
+    ##     suc_out <- t_uniform_succ_given_alpha(Y = Y1_scaled,
+    ##                                           alpha = alpha_scaled,
+    ##                                           nu = nu,
+    ##                                           sig_diag = sig_diag_scaled,
+    ##                                           num_em_runs = num_em_runs,
+    ##                                           em_z_start_sd = z_start_sd,
+    ##                                           lambda_type = lambda_type,
+    ##                                           em_itermax = em_itermax,
+    ##                                           print_progress = FALSE)
+    ##     suc_out$sig_diag_scaled <- sig_diag_scaled
+    ## }
+    ## --------------------------------------------------------------------
 
     suc_out$Y1_scaled <- Y1_scaled  ## ols estimates
     suc_out$alpha_scaled <- alpha_scaled

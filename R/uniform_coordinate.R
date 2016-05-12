@@ -3,14 +3,25 @@
 #'
 #' @inheritParams succotash_unif_fixed
 #' @inheritParams uniform_succ_given_alpha
-#'
-#'
+#' @param likelihood Can be \code{"normal"} or \code{"t"}.
+#' @param df A positive numeric. The degrees of freedom if the
+#'     likelihood is t.
 #'
 #'
 #'
 fit_succotash_unif_coord <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
-                                       print_ziter = FALSE, newt_itermax = 100, tol = 10 ^ -4,
-                                       var_scale = TRUE) {
+                                     print_ziter = FALSE, newt_itermax = 100, tol = 10 ^ -4,
+                                     var_scale = TRUE,
+                                     likelihood = c("normal", "t"), df = NULL) {
+
+    likelihood = match.arg(likelihood, c("normal", "t"))
+    if (likelihood == "normal") {
+        df <- 1000
+    } else if (likelihood == "t" & is.null(df)) {
+        stop("t likelihood specified but df is null")
+    } else if (likelihood != "t" & likelihood != "normal") {
+        stop("needs to be either a t likelihood or a normal likelihood")
+    }
 
     M <- length(a_seq) + length(b_seq) + 1
     ## p <- nrow(Y)
@@ -37,7 +48,8 @@ fit_succotash_unif_coord <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_d
 
     llike_new <- succotash_llike_unif(pi_Z = pi_Z, lambda = lambda,
                                       alpha = alpha, Y = Y, a_seq = a_seq, b_seq = b_seq,
-                                      sig_diag = sig_diag, var_scale = var_scale)
+                                      sig_diag = sig_diag, var_scale = var_scale,
+                                      likelihood = likelihood, df = df)
 
     llike_vec <- llike_new
 
@@ -55,6 +67,7 @@ fit_succotash_unif_coord <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_d
                                   pi_vals = pi_new, lambda = lambda,
                                   alpha = alpha, Y = Y, a_seq = a_seq,
                                   b_seq = b_seq, sig_diag = sig_diag,
+                                  likelihood = likelihood, df = df,
                                   method = "BFGS",
                                   control = list(fnscale = -1, maxit = 50, reltol = 10 ^ -4))
         Z_new <- optim_out$par
@@ -95,7 +108,8 @@ fit_succotash_unif_coord <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_d
                                tol = 1e-07, maxiter = 500, trace = FALSE)
         ash_out <- ashr:::estimate_mixprop(betahat = c(betahat), sebetahat = sebetahat,
                                            g = g, prior = lambda, null.comp = length(a_seq + 1),
-                                           optmethod = optmethod, control = control.default)
+                                           optmethod = optmethod, control = control.default,
+                                           df = df)
 
         ## ashr subtracts off the largest value of the loglikelihood
         ## to increase numerical stability during the optimization
@@ -113,7 +127,8 @@ fit_succotash_unif_coord <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_d
 
         ## llike_new <- succotash_llike_unif(pi_Z = pi_Z, lambda = lambda,
         ##                                   alpha = alpha, Y = Y, a_seq = a_seq, b_seq = b_seq,
-        ##                                   sig_diag = sig_diag, var_scale = var_scale)
+        ##                                   sig_diag = sig_diag, var_scale = var_scale,
+        ##                                   likelihood = likelihood, df = df)
 
         ## cat("llike after ash:", llike_new, "\n")
         ## cat(" llike ash says:", ash_out$loglik, "\n")
@@ -122,11 +137,12 @@ fit_succotash_unif_coord <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_d
         ## Update scale_val with Brent's method --------------------------------------
 
         if (var_scale) {
-            oout <- stats::optim(par = scale_val, fn = only_scale,
-                                 pi_Z_minus_scale = pi_Z[-length(pi_Z)],
+            oout <- stats::optim(par = scale_val, fn = only_Z,
+                                 Z = Z_new, pi_vals = pi_new,
                                  lambda = lambda, alpha = alpha,
                                  Y = Y, a_seq = a_seq, b_seq = b_seq,
-                                 sig_diag = sig_diag,
+                                 sig_diag = sig_diag, likelihood = likelihood,
+                                 df = df,
                                  method = "Brent", lower = 0,
                                  upper = 10,
                                  control = list(fnscale = -1))
@@ -143,24 +159,6 @@ fit_succotash_unif_coord <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_d
     return(list(pi_Z = pi_Z, llike_vec = llike_vec))
 }
 
-#' Wrapper for \code{\link{succotash_llike_unif}} but useful for optim
-#' where only update scale_val.
-#'
-#' @inheritParams succotash_llike_unif
-#' @param scale_val A positive numeric. The variance inflation
-#'     parameter.
-#' @param pi_Z_minus_scale A vector of numerics. The first M are the
-#'     pi-vals, the last k are the Z-vals.
-#'
-only_scale <- function(scale_val, pi_Z_minus_scale, lambda, alpha, Y, a_seq, b_seq, sig_diag) {
-    pi_Z <- c(pi_Z_minus_scale, scale_val)
-    llike <- succotash_llike_unif(pi_Z = pi_Z, lambda = lambda,
-                                  alpha = alpha, Y = Y, a_seq = a_seq,
-                                  b_seq = b_seq, sig_diag = sig_diag,
-                                  var_scale = TRUE)
-    return(llike)
-}
-
 #' Wrapper for \code{\link{succotash_llike_unif}} but useful for optim where only update Z.
 #'
 #' @param Z A k by 1 matrix of numerics. The confounders.
@@ -168,12 +166,15 @@ only_scale <- function(scale_val, pi_Z_minus_scale, lambda, alpha, Y, a_seq, b_s
 #' @param scale_val A positive numeric. The variance inflation parameter.
 #' @inheritParams succotash_llike_unif
 #'
-only_Z <- function(Z, pi_vals, scale_val, lambda, alpha, Y, a_seq, b_seq, sig_diag) {
+only_Z <- function(Z, pi_vals, scale_val, lambda, alpha, Y, a_seq, b_seq, sig_diag,
+                   likelihood = "normal", df = NULL) {
     pi_Z <- c(pi_vals, Z, scale_val)
     llike <- succotash_llike_unif(pi_Z = pi_Z, lambda = lambda,
                                   alpha = alpha, Y = Y, a_seq = a_seq,
                                   b_seq = b_seq, sig_diag = sig_diag,
-                                  var_scale = TRUE)
+                                  var_scale = TRUE,
+                                  likelihood = likelihood,
+                                  df = df)
     return(llike)
 }
 
@@ -181,10 +182,14 @@ only_Z <- function(Z, pi_vals, scale_val, lambda, alpha, Y, a_seq, b_seq, sig_di
 #'
 #' @inheritParams only_Z
 #'
-only_Z_grad <- function(Z, pi_vals, scale_val, lambda, alpha, Y, a_seq, b_seq, sig_diag) {
+only_Z_grad <- function(Z, pi_vals, scale_val, lambda, alpha, Y, a_seq, b_seq, sig_diag,
+                        likelihood = "normal", df = NULL) {
   pi_Z <- c(pi_vals, Z, scale_val)
-  grad_final <- unif_grad_simp(pi_Z = pi_Z, lambda = lambda, alpha = alpha, Y = Y,  sig_diag = sig_diag,
-                               a_seq = a_seq, b_seq = b_seq, var_scale = TRUE)
+  grad_final <- unif_grad_simp(pi_Z = pi_Z, lambda = lambda,
+                               alpha = alpha, Y = Y,
+                               sig_diag = sig_diag, a_seq = a_seq,
+                               b_seq = b_seq, var_scale = TRUE,
+                               likelihood = likelihood, df = df)
   return(grad_final)
 }
 
@@ -295,11 +300,20 @@ unif_grad_llike <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
 #' @param right_seq The right endpoints of the uniforms
 #' @param pi_vals A vector of non-negative numerics that sum to
 #'     one. The mixing proportions.
-#'
+#' @param likelihood Can be \code{"normal"} or \code{"t"}.
+#' @param df A positive numeric. The degrees of freedom if the
+#'     likelihood is t.
 #'
 llike_unif_simp <- function(Y, Z, pi_vals, alpha, sig_diag, left_seq, right_seq,
-                            scale_val = 1) {
+                            scale_val = 1, likelihood = c("normal", "t"), df = NULL) {
     sig_diag <- sig_diag * scale_val
+
+    likelihood = match.arg(likelihood, c("normal", "t"))
+    if (likelihood == "normal") {
+        df <- 1000
+    } else if (likelihood == "t" & is.null(df)) {
+        stop("t likelihood specified but df is null")
+    }
 
     p <- nrow(Y)
     ## k <- nrow(Z)
@@ -317,8 +331,9 @@ llike_unif_simp <- function(Y, Z, pi_vals, alpha, sig_diag, left_seq, right_seq,
     fkj_mat <- matrix(NA, nrow = p, ncol = M)
 
     var_mat <- matrix(rep(sqrt(sig_diag), M - length(null_spot)), nrow = p, byrow = FALSE)
-    pnorm_diff <- stats::pnorm(mean_mat_left[, -null_spot], mean = 0, sd = var_mat) -
-        stats::pnorm(mean_mat_right[, -null_spot], mean = 0, sd = var_mat)
+
+    pnorm_diff <- pt_wrap(x = mean_mat_left[, -null_spot], df = df, mean = 0, sd = var_mat) -
+        pt_wrap(x = mean_mat_right[, -null_spot], df = df, mean = 0, sd = var_mat)
 
     pnorm_ratio <- pnorm_diff %*% diag(1 / (right_seq[-null_spot] - left_seq[-null_spot]))
 
@@ -327,7 +342,9 @@ llike_unif_simp <- function(Y, Z, pi_vals, alpha, sig_diag, left_seq, right_seq,
 
     assertthat::are_equal(mean_mat_left[, null_spot], mean_mat_right[, null_spot])
 
-    fkj_mat[, null_spot] <- stats::dnorm(mean_mat_left[, null_spot], mean = 0, sd = sqrt(sig_diag))
+    fkj_mat[, null_spot] <- dt_wrap(x = mean_mat_left[, null_spot],
+                                    df = df, mean = 0,
+                                    sd = sqrt(sig_diag))
 
     mat_lik <- fkj_mat %*% diag(pi_vals)
 
@@ -343,11 +360,21 @@ llike_unif_simp <- function(Y, Z, pi_vals, alpha, sig_diag, left_seq, right_seq,
 #'
 #' @return The gradient for Z.
 #'
-unif_grad_simp <- function(pi_Z, lambda, alpha, Y,  sig_diag, left_seq = NULL, right_seq = NULL,
-                           a_seq = NULL, b_seq = NULL, var_scale = TRUE) {
+unif_grad_simp <- function(pi_Z, lambda, alpha, Y,  sig_diag,
+                           left_seq = NULL, right_seq = NULL,
+                           a_seq = NULL, b_seq = NULL,
+                           var_scale = TRUE,
+                           likelihood = c("normal", "t"), df = NULL) {
 
     assertthat::assert_that(!( (is.null(left_seq) | is.null(right_seq)) &
                               (is.null(a_seq) | is.null(b_seq))))
+
+    likelihood = match.arg(likelihood, c("normal", "t"))
+    if (likelihood == "normal") {
+        df <- 1000
+    } else if (likelihood == "t" & is.null(df)) {
+        stop("t likelihood specified but df is null")
+    }
 
     if (is.null(left_seq) | is.null(right_seq)) {
         left_seq <- c(a_seq, rep(0, length = length(b_seq) + 1))
@@ -388,8 +415,8 @@ unif_grad_simp <- function(pi_Z, lambda, alpha, Y,  sig_diag, left_seq = NULL, r
     quants <- matrix(rep(resid_vec, M), nrow = p, byrow = FALSE)
     sd_mat <- matrix(rep(sig_diag, M), nrow = p, byrow = FALSE)
 
-    dnorm_mat_left  <- stats::dnorm(x = quants, mean = left_means, sd = sd_mat)
-    dnorm_mat_right <- stats::dnorm(x = quants, mean = right_means, sd = sd_mat)
+    dnorm_mat_left  <- dt_wrap(x = quants, df = df, mean = left_means, sd = sd_mat)
+    dnorm_mat_right <- dt_wrap(x = quants, df = df, mean = right_means, sd = sd_mat)
 
     dnorm_diff_mat <- dnorm_mat_right[, -null_spot] - dnorm_mat_left[, -null_spot]
 
@@ -399,7 +426,14 @@ unif_grad_simp <- function(pi_Z, lambda, alpha, Y,  sig_diag, left_seq = NULL, r
 
     assertthat::are_equal(dnorm_mat_left[, null_spot], dnorm_mat_right[, null_spot])
 
-    dnorm_diff_mat_scaled[, null_spot] <- dnorm_mat_left[, null_spot] * (resid_vec / sig_diag)
+    if (likelihood == "normal") {
+        dnorm_diff_mat_scaled[, null_spot] <- dnorm_mat_left[, null_spot] * (resid_vec / sig_diag)
+    } else if (likelihood == "t") {
+        dnorm_diff_mat_scaled[, null_spot] <- dnorm_mat_left[, null_spot] *
+            (resid_vec / sig_diag) * (1 +  (resid_vec) ^ 2 / (sig_diag * df)) ^ -1 * (df + 1) / df
+    } else {
+        stop("likelihood not normal or t")
+    }
 
     dnorm_diff_mat_pluspi <- dnorm_diff_mat_scaled %*% diag(pi_current)
 
@@ -413,8 +447,8 @@ unif_grad_simp <- function(pi_Z, lambda, alpha, Y,  sig_diag, left_seq = NULL, r
     fkj_mat <- matrix(NA, nrow = p, ncol = M)
 
     var_mat <- matrix(rep(sqrt(sig_diag), M - length(null_spot)), nrow = p, byrow = FALSE)
-    pnorm_diff <- stats::pnorm(mean_mat_left[, -null_spot], mean = 0, sd = var_mat) -
-        stats::pnorm(mean_mat_right[, -null_spot], mean = 0, sd = var_mat)
+    pnorm_diff <- pt_wrap(x = mean_mat_left[, -null_spot], df = df, mean = 0, sd = var_mat) -
+        pt_wrap(x = mean_mat_right[, -null_spot], df = df, mean = 0, sd = var_mat)
 
     pnorm_ratio <- pnorm_diff %*% diag(1 / (right_seq[-null_spot] - left_seq[-null_spot]))
 
@@ -423,7 +457,9 @@ unif_grad_simp <- function(pi_Z, lambda, alpha, Y,  sig_diag, left_seq = NULL, r
 
     assertthat::are_equal(mean_mat_left[, null_spot], mean_mat_right[, null_spot])
 
-    fkj_mat[, null_spot] <- stats::dnorm(mean_mat_left[, null_spot], mean = 0, sd = sqrt(sig_diag))
+    fkj_mat[, null_spot] <- dt_wrap(x = mean_mat_left[, null_spot],
+                                    df = df, mean = 0,
+                                    sd = sqrt(sig_diag))
 
     mat_lik <- fkj_mat %*% diag(pi_current)
 
@@ -444,4 +480,29 @@ unif_grad_simp <- function(pi_Z, lambda, alpha, Y,  sig_diag, left_seq = NULL, r
     ## }
 
     return(grad_final)
+}
+
+
+#' Wrapper for dt with a non-zero mena and non-1 standard deviation.
+#'
+#' @param x A numeric. Where to evaluate the density function.
+#' @param df A positive numeric. The degrees of freedom.
+#' @param mean A numeric. The mean of the t. Defaults to 0.
+#' @param sd A positive numeric. The standard deviation of the
+#'     t. Defaults to 1.
+dt_wrap <- function(x, df, mean = 0, sd = 1) {
+    x_new <- (x - mean) / sd
+    dval <- stats::dt(x_new, df = df) / sd
+    return(dval)
+}
+
+#' Wrapper for pt with a non-zero mena and non-1 standard deviation.
+#'
+#' @param x A numeric. Where to evaluate the cdf.
+#' @inheritParams dt_wrap
+#'
+pt_wrap <- function(x, df, mean = 0, sd = 1) {
+    x_new <- (x - mean) / sd
+    pval <- stats::pt(x_new, df = df)
+    return(pval)
 }

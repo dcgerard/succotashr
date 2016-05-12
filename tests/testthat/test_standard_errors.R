@@ -1,7 +1,8 @@
 library(succotashr)
-context("Make sure likelihood increases monotonically")
+context("OLS estimates and SE's are correctly calculated")
 
 test_that("get out ols estimates and ols standard errors from certain versions of SUCCOTASH", {
+    set.seed(122)
     ## generate random data for succotash
     p <- 23
     n <- 11
@@ -15,7 +16,7 @@ test_that("get out ols estimates and ols standard errors from certain versions o
     Y <- X %*% beta + Z %*% alpha + E
 
     suc_out <- succotash(Y = Y, X = X, k = k, use_ols_se = TRUE, var_scale = FALSE,
-                         two_step = FALSE)
+                         two_step = FALSE, optmethod = "em")
 
     lm_out <- limma::lmFit(object = t(Y), design = X)
 

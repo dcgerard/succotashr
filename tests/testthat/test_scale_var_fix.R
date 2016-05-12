@@ -102,11 +102,11 @@ test_that("two-step actually works", {
     E     <- matrix(rnorm(n * p), nrow = n)
     Y     <- X %*% beta + Z %*% alpha + E
 
-    suc0 <- succotash(Y = Y, X = X, k = k, two_step = FALSE, var_scale = TRUE)
+    suc0 <- succotash(Y = Y, X = X, k = k, two_step = FALSE, var_scale = TRUE, optmethod = "em")
     new_scale <- suc0$scale_val * n / (n - k - q)
     suc1 <- succotash(Y = Y, X = X, k = k, two_step = FALSE, inflate_var = new_scale,
-                      var_scale = FALSE)
-    suc2 <- succotash(Y = Y, X = X, k = k, two_step = TRUE, var_scale = TRUE)
+                      var_scale = FALSE, optmethod = "em")
+    suc2 <- succotash(Y = Y, X = X, k = k, two_step = TRUE, var_scale = TRUE, optmethod = "em")
 
     expect_equal(suc0$sig_diag_scaled * n / (n - k - q),
                  suc1$sig_diag_scaled)

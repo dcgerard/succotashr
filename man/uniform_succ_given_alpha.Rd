@@ -9,7 +9,8 @@ uniform_succ_given_alpha(Y, alpha, sig_diag, num_em_runs = 2, a_seq = NULL,
   pi_init = NULL, Z_init = NULL, em_z_start_sd = 1,
   pi_init_type = "random", lambda_type = "zero_conc",
   print_progress = TRUE, print_ziter = FALSE, true_Z = NULL,
-  var_scale = TRUE, optmethod = c("coord", "em"))
+  var_scale = TRUE, optmethod = c("coord", "em"), likelihood = c("normal",
+  "t"), df = NULL)
 }
 \arguments{
 \item{Y}{A p by 1 matrix of numerics. The data.}
@@ -71,6 +72,9 @@ variances (\code{TRUE}) or not (\code{FALSE}).}
 algorithm (\code{"em"}). Coordinate ascent is currently only
 implemented in the uniform mixtures case, for which it is the
 default.}
+
+\item{likelihood}{Which likelihood should we use? Normal
+(\code{"normal"}) or t (\code{"t"})?}
 }
 \description{
 Second step of SUCCOTASH with uniform mixture.

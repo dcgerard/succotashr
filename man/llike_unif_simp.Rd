@@ -5,7 +5,7 @@
 \title{Me being as careful as possible when calculating the succotash log-likelihood.}
 \usage{
 llike_unif_simp(Y, Z, pi_vals, alpha, sig_diag, left_seq, right_seq,
-  scale_val = 1)
+  scale_val = 1, likelihood = c("normal", "t"), df = NULL)
 }
 \arguments{
 \item{Y}{a p by 1 matrix of numerics.}
@@ -24,6 +24,11 @@ one. The mixing proportions.}
 \item{right_seq}{The right endpoints of the uniforms}
 
 \item{scale_val}{A positivie numeric.}
+
+\item{likelihood}{Can be \code{"normal"} or \code{"t"}.}
+
+\item{df}{A positive numeric. The degrees of freedom if the
+likelihood is t.}
 }
 \description{
 Me being as careful as possible when calculating the succotash log-likelihood.

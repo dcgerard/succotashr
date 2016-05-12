@@ -8,7 +8,8 @@ uniform_succ_em(Y, alpha, sig_diag, a_seq, b_seq, pi_init = NULL,
   Z_init = NULL, lambda = NULL, print_ziter = FALSE,
   print_progress = FALSE, em_z_start_sd = 1, em_itermax = 200,
   em_tol = 10^-3, pi_init_type = c("random", "uniform", "zero_conc"),
-  true_Z = NULL, var_scale = TRUE, optmethod = c("coord", "em"))
+  true_Z = NULL, var_scale = TRUE, optmethod = c("coord", "em"),
+  likelihood = c("normal", "t"), df = NULL)
 }
 \arguments{
 \item{Y}{A p by 1 matrix of numerics. The data.}
@@ -63,6 +64,9 @@ variances (\code{TRUE}) or not (\code{FALSE}).}
 algorithm (\code{"em"}). Coordinate ascent is currently only
 implemented in the uniform mixtures case, for which it is the
 default.}
+
+\item{likelihood}{Which likelihood should we use? Normal
+(\code{"normal"}) or t (\code{"t"})?}
 }
 \description{
 EM algorithm for second step of SUCCOTASH

@@ -1,5 +1,5 @@
 library(succotashr)
-context("Make sure likelihood increases monotonically")
+context("Test normal coordinate ascent")
 
 test_that("normal_coord will run", {
     skip("normal_coord not working yet")

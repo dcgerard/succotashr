@@ -191,9 +191,9 @@ test_that("uniform_succ_given_alpha will actually run", {
 
 
 test_that("fit_succotash_unif_coord will actually run", {
-  set.seed(245)
-  p <- 100
-  k <- 10
+  set.seed(25)
+  p <- 53
+  k <- 13
   m <- 17
   lambda <- rep(1, length = m) ## nullpi weight
   scale_val <- 1
@@ -252,6 +252,20 @@ test_that("fit_succotash_unif_coord will actually run", {
   expect_true(all(fit_out2$llike_vec[1:(length(fit_out2$llike_vec) - 1)] <=
                   fit_out2$llike_vec[2:length(fit_out2$llike_vec)]))
 
+  expect_true(cor(zhat2, c(Z)) > 0.9)
+
+
+
+  fit_out3 <- fit_succotash_unif_coord(pi_Z = pi_Z, lambda = lambda, alpha = alpha, Y = Y,
+                                       a_seq = a_seq, b_seq = b_seq, sig_diag = sig_diag,
+                                       var_scale = var_scale, likelihood = "t", df = 1)
+
+  expect_true(all(fit_out3$llike_vec[1:(length(fit_out3$llike_vec) - 1)] <=
+                  fit_out3$llike_vec[2:length(fit_out3$llike_vec)]))
+
+  zhat3 <- fit_out3$pi_Z[(length(pi_vals) + 1):(length(fit_out3$pi_Z) - 1)]
+
+  expect_true(cor(zhat3, c(Z)) > 0.85)
 
 
   ## em_out <- uniform_succ_em(Y = Y, alpha = alpha, sig_diag = sig_diag, a_seq = a_seq,
@@ -271,7 +285,6 @@ test_that("fit_succotash_unif_coord will actually run", {
   ##                      Y = Y, alpha = alpha, a_seq = a_seq, b_seq = b_seq, sig_diag = sig_diag,
   ##                      var_scale = TRUE)
 
-  expect_true(cor(zhat2, Z) > 0.85)
 }
 )
 

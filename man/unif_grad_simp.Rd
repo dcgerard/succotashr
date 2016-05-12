@@ -6,7 +6,8 @@
 likelihood function wrt Z.}
 \usage{
 unif_grad_simp(pi_Z, lambda, alpha, Y, sig_diag, left_seq = NULL,
-  right_seq = NULL, a_seq = NULL, b_seq = NULL, var_scale = TRUE)
+  right_seq = NULL, a_seq = NULL, b_seq = NULL, var_scale = TRUE,
+  likelihood = c("normal", "t"), df = NULL)
 }
 \arguments{
 \item{pi_Z}{A vector. The first \code{M} values are the current
@@ -37,6 +38,11 @@ endpoints of the mixing uniforms.}
 
 \item{var_scale}{A logical. Should we update the scaling on the
 variances (\code{TRUE}) or not (\code{FALSE}).}
+
+\item{likelihood}{Can be \code{"normal"} or \code{"t"}.}
+
+\item{df}{A positive numeric. The degrees of freedom if the
+likelihood is t.}
 }
 \value{
 The gradient for Z.

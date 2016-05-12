@@ -6,7 +6,7 @@
 mixtures.}
 \usage{
 succotash_llike_unif(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
-  var_scale = TRUE)
+  var_scale = TRUE, likelihood = c("normal", "t"), df = NULL)
 }
 \arguments{
 \item{pi_Z}{A vector. The first \code{M} values are the current
@@ -33,6 +33,11 @@ of the observations.}
 
 \item{var_scale}{A logical. Should we update the scaling on the
 variances (\code{TRUE}) or not (\code{FALSE}).}
+
+\item{likelihood}{Can be \code{"normal"} or \code{"t"}.}
+
+\item{df}{A positive numeric. The degrees of freedom if the
+likelihood is t.}
 }
 \description{
 Calculates the loglikelihood of the SUCCOTASH model under uniform

@@ -2,9 +2,10 @@ library(succotashr)
 context("Make sure it actually runs")
 
 test_that("succotash_fixed will actually run with var_scale = TRUE", {
+    set.seed(992)
     ## generate random data for succotash
-    p <- 20
-    n <- 10
+    p <- 23
+    n <- 11
     k <- 5
     q <- 2
     X <- matrix(rnorm(q * n), nrow = n, ncol = q)
@@ -14,7 +15,7 @@ test_that("succotash_fixed will actually run with var_scale = TRUE", {
     E <- matrix(rnorm(n * p), nrow = n, ncol = p)
     Y <- X %*% beta + Z %*% alpha + E
 
-    suc_out <- succotash(Y = Y, X = X, k = k, fa_method = "pca")
+    suc_out <- succotash(Y = Y, X = X, k = k, fa_method = "pca", optmethod = "em")
 
     ## generate random data for succotash_given_alpgha
     beta1 <- matrix(rnorm(p), ncol = 1)
@@ -25,5 +26,15 @@ test_that("succotash_fixed will actually run with var_scale = TRUE", {
     suca <- succotash_given_alpha(Y = Y1, alpha = t(alpha),
                                   sig_diag = rep(1, p),
                                   lambda_type = "zero_conc", lambda0 = 1)
+
+    expect_equal(sum(suc_out$pi_vals), 1)
+    expect_true(all(suc_out$pi_vals > -10 ^ -14))
+    expect_true(all(suc_out$lfdr > -10 ^ -14))
+    expect_true(all(suc_out$qvals > -10 ^ -14))
+
+    expect_true(all(suc_out$pi_vals < 1 + 10 ^ -14))
+    expect_true(all(suc_out$lfdr < 1 + 10 ^ -14))
+    expect_true(all(suc_out$qvals < 1 + 10 ^ -14))
+
 }
 )

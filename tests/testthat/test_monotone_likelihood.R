@@ -91,7 +91,7 @@ test_that("succotash_unif_fixed will increase likelihood", {
 
 
 
-test_that("llike_unif_simp provides same likelihood values as succotash_llike_unif", {
+test_that("llike_unif_simp provides same likelihood values as succotash_llike_unif and t_succotash_llike_unif", {
     set.seed(775)
     p <- 100
     k <- 20
@@ -110,9 +110,9 @@ test_that("llike_unif_simp provides same likelihood values as succotash_llike_un
     scale_val <- 1
 
     llike1 <- llike_unif_simp(Y = Y, Z = Z, pi_vals = pi_vals, alpha = alpha,
-                               sig_diag = sig_diag,
-                               left_seq = left_seq, right_seq = right_seq,
-                               scale_val = scale_val)
+                              sig_diag = sig_diag,
+                              left_seq = left_seq, right_seq = right_seq,
+                              scale_val = scale_val, likelihood = "normal")
 
 
     pi_Z <- c(pi_vals, c(Z), scale_val)
@@ -124,6 +124,19 @@ test_that("llike_unif_simp provides same likelihood values as succotash_llike_un
                                    var_scale = TRUE)
 
     expect_equal(llike1, llike2)
+
+    tllike1 <- llike_unif_simp(Y = Y, Z = Z, pi_vals = pi_vals, alpha = alpha,
+                               sig_diag = sig_diag,
+                               left_seq = left_seq, right_seq = right_seq,
+                               scale_val = scale_val, likelihood = "t", df = 1)
+
+    tllike2 <- t_succotash_llike_unif(pi_Z = pi_Z[1:(length(pi_Z) - 1)],
+                                      lambda = lambda,
+                                      alpha = alpha, Y = Y,
+                                      a_seq = a_seq, b_seq = b_seq,
+                                      sig_diag = sig_diag, nu = 1)
+
+    expect_equal(tllike1, tllike2)
 
 }
 )
@@ -161,6 +174,5 @@ test_that("unif_grad_simp provides same gradient values as unif_grad_llike", {
                              sig_diag = sig_diag, var_scale = TRUE)
 
     expect_equal(grad1, grad2)
-
 }
 )

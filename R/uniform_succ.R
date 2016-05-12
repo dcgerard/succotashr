@@ -391,7 +391,9 @@ fun_unif_scale <- function(scale_val, Y, az, sig_diag, Tkj, a_seq, b_seq) {
 #'     of the observations.
 #'@param var_scale A logical. Should we update the scaling on the
 #'     variances (\code{TRUE}) or not (\code{FALSE}).
-#'
+#' @param likelihood Can be \code{"normal"} or \code{"t"}.
+#' @param df A positive numeric. The degrees of freedom if the
+#'     likelihood is t.
 #'
 #'
 #'@seealso \code{\link{uniform_succ_given_alpha}}
@@ -399,8 +401,17 @@ fun_unif_scale <- function(scale_val, Y, az, sig_diag, Tkj, a_seq, b_seq) {
 #'
 #' @export
 succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
-                                 var_scale = TRUE) {
+                                 var_scale = TRUE, likelihood = c("normal", "t"),
+                                 df = NULL) {
     M <- length(a_seq) + length(b_seq) + 1
+
+    likelihood = match.arg(likelihood, c("normal", "t"))
+    if (likelihood == "normal") {
+        df <- 1000
+    } else if (likelihood == "t" & is.null(df)) {
+        stop("t likelihood specified but df is null")
+    }
+
     ## p <- nrow(Y)
     if (var_scale) {
         k <- length(pi_Z) - M - 1
@@ -427,7 +438,7 @@ succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
     left_means_zero <- diag(1 / sqrt(sig_diag)) %*% outer(c( (Y - az)), rep(0, length(a_seq)), "-")
     right_means <- diag(1 / sqrt(sig_diag)) %*% outer(c( (Y - az)), b_seq, "-")
     right_means_zero <- diag(1 / sqrt(sig_diag)) %*% outer(c( (Y - az)), rep(0, length(b_seq)), "-")
-    zero_means <- stats::dnorm(Y, mean = az, sd = sqrt(sig_diag))
+    zero_means <- dt_wrap(x = Y, df = df, mean = az, sd = sqrt(sig_diag))
 
     left_ispos <- left_means > 0
     right_ispos <- right_means > 0
@@ -435,15 +446,15 @@ succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
     pnorm_left_diff <- matrix(NA, ncol = ncol(left_means), nrow = nrow(left_means))
     pnorm_right_diff <- matrix(NA, ncol = ncol(right_means), nrow = nrow(right_means))
 
-    pnorm_left_diff[!left_ispos] <-
-        stats::pnorm(left_means[!left_ispos]) - stats::pnorm(left_means_zero[!left_ispos])
-    pnorm_right_diff[!right_ispos] <-
-        stats::pnorm(right_means_zero[!right_ispos]) - stats::pnorm(right_means[!right_ispos])
+    pnorm_left_diff[!left_ispos] <- pt_wrap(x = left_means[!left_ispos], df = df) -
+        pt_wrap(x = left_means_zero[!left_ispos], df = df)
+    pnorm_right_diff[!right_ispos] <- pt_wrap(x = right_means_zero[!right_ispos], df = df) -
+        pt_wrap(x = right_means[!right_ispos], df = df)
 
-    pnorm_left_diff[left_ispos] <-
-        stats::pnorm(-1 * left_means_zero[left_ispos]) - stats::pnorm(-1 * left_means[left_ispos])
-    pnorm_right_diff[right_ispos] <-
-        stats::pnorm(-1 * right_means[right_ispos]) - stats::pnorm(-1 * right_means_zero[right_ispos])
+    pnorm_left_diff[left_ispos] <- pt_wrap(x = -1 * left_means_zero[left_ispos], df = df) -
+        pt_wrap(x = -1 * left_means[left_ispos], df = df)
+    pnorm_right_diff[right_ispos] <- pt_wrap(x = -1 * right_means[right_ispos], df = df) -
+        pt_wrap(x = -1 * right_means_zero[right_ispos], df = df)
 
     pnorm_left_diff <- pnorm_left_diff %*% diag(1 / a_seq)
     pnorm_right_diff <- pnorm_right_diff %*% diag(1 / b_seq)
@@ -515,9 +526,19 @@ uniform_succ_given_alpha <-
            em_itermax = 200, em_tol = 10 ^ -6, pi_init = NULL, Z_init = NULL,
            em_z_start_sd = 1, pi_init_type = "random",
            lambda_type = "zero_conc", print_progress = TRUE, print_ziter = FALSE,
-           true_Z = NULL, var_scale = TRUE, optmethod = c("coord", "em")) {
+           true_Z = NULL, var_scale = TRUE, optmethod = c("coord", "em"),
+           likelihood = c("normal", "t"), df = NULL) {
     p <- nrow(Y)
     ## k <- ncol(alpha)
+
+    likelihood = match.arg(likelihood, c("normal", "t"))
+    if (likelihood == "normal") {
+        df <- 1000
+    } else if (likelihood == "t" & is.null(df)) {
+        stop("t likelihood specified but df is null")
+    } else if (likelihood != "t" & likelihood != "normal") {
+        stop("needs to be either a t likelihood or a normal likelihood")
+    }
 
     optmethod <- match.arg(optmethod,  c("coord", "em"))
 
@@ -577,7 +598,9 @@ uniform_succ_given_alpha <-
                               pi_init_type = "zero_conc",
                               em_z_start_sd = em_z_start_sd,
                               true_Z = true_Z, var_scale = var_scale,
-                              optmethod = optmethod)
+                              optmethod = optmethod,
+                              likelihood = likelihood,
+                              df = df)
 
     ## Random init for other EM algorithms.
     if (num_em_runs > 1) {
@@ -593,7 +616,9 @@ uniform_succ_given_alpha <-
                                       pi_init_type = "random",
                                       em_z_start_sd = em_z_start_sd,
                                       true_Z = true_Z, var_scale = var_scale,
-                                      optmethod = optmethod)
+                                      optmethod = optmethod,
+                                      likelihood = likelihood,
+                                      df = df)
             if (em_new$llike > em_out$llike) {
                 em_out <- em_new
             }
@@ -610,23 +635,45 @@ uniform_succ_given_alpha <-
 
     az <- alpha %*% matrix(Z_current, ncol = 1)
 
-    betahat <- ashr::postmean(m = mix_fit, betahat = c(Y - az),
-                              sebetahat = sqrt(sig_diag * scale_val),
-                              v = rep(1000, p))
+    if (length(df) == 1) {
+        betahat <- ashr::postmean(m = mix_fit, betahat = c(Y - az),
+                                  sebetahat = sqrt(sig_diag * scale_val),
+                                  v = rep(df, p))
+        probs <- ashr::comppostprob(m = mix_fit, x = c(Y - az),
+                                    s = sqrt(sig_diag * scale_val),
+                                    v = rep(df, p))
+    } else if (length(df) == p) {
+        betahat <- ashr::postmean(m = mix_fit, betahat = c(Y - az),
+                                  sebetahat = sqrt(sig_diag * scale_val),
+                                  v = df)
+        probs <- ashr::comppostprob(m = mix_fit, x = c(Y - az),
+                                    s = sqrt(sig_diag * scale_val),
+                                    v = df)
+    } else {
+        stop("df not the correct length")
+    }
 
-    probs <- ashr::comppostprob(m = mix_fit, x = c(Y - az),
-                                s = sqrt(sig_diag * scale_val),
-                                v = rep(1000, p))
     lfdr <- probs[length(a_seq) + 1, ]
     qvals <- ashr::qval.from.lfdr(lfdr)
 
     pi0 <- pi_current[length(a_seq) + 1]
 
+
     NegativeProb <- rep(0, length = p)
-    NegativeProb <-
-      ashr::cdf_post(mix_fit, 0,
-               betahat = c(Y - az),
-               sebetahat = sqrt(sig_diag * scale_val), v = rep(1000, p)) - lfdr
+    if (length(df) == 1) {
+        NegativeProb <- ashr::cdf_post(mix_fit, 0,
+                                       betahat = c(Y - az),
+                                       sebetahat = sqrt(sig_diag * scale_val),
+                                       v = rep(df, p)) - lfdr
+    } else if (length(df) == p) {
+        NegativeProb <- ashr::cdf_post(mix_fit, 0,
+                                       betahat = c(Y - az),
+                                       sebetahat = sqrt(sig_diag * scale_val),
+                                       v = df) - lfdr
+    } else {
+        stop("df not the correct length")
+    }
+
     lfsr <- ifelse(NegativeProb > 0.5 * (1 - lfdr), 1 - NegativeProb,
                    NegativeProb + lfdr)
 
@@ -649,10 +696,20 @@ uniform_succ_em <- function(Y, alpha, sig_diag, a_seq, b_seq,
                             em_itermax = 200,
                             em_tol = 10 ^ -3,
                             pi_init_type = c("random", "uniform", "zero_conc"), true_Z = NULL,
-                            var_scale = TRUE, optmethod = c("coord", "em")) {
+                            var_scale = TRUE, optmethod = c("coord", "em"),
+                            likelihood = c("normal", "t"), df = NULL) {
 
     optmethod    <- match.arg(optmethod, c("coord", "em"))
     pi_init_type <- match.arg(pi_init_type, c("random", "uniform", "zero_conc"))
+
+    likelihood = match.arg(likelihood, c("normal", "t"))
+    if (likelihood == "normal") {
+        df <- 1000
+    } else if (likelihood == "t" & is.null(df)) {
+        stop("t likelihood specified but df is null")
+    } else if (likelihood != "t" & likelihood != "normal") {
+        stop("needs to be either a t likelihood or a normal likelihood")
+    }
 
     M <- length(a_seq) + length(b_seq) + 1
 
@@ -686,9 +743,10 @@ uniform_succ_em <- function(Y, alpha, sig_diag, a_seq, b_seq,
     }
 
     if (is.null(Z_init)) {
-      Z_init <- matrix(stats::rnorm(k, sd = em_z_start_sd), nrow = k)
+        Z_init <- matrix(stats::rnorm(k, sd = em_z_start_sd), nrow = k)
     } else if (length(Z_init) != k) {
-      Z_init <- matrix(stats::rnorm(k, sd = em_z_start_sd), nrow = k)
+        message("Z_init not correct dimensions.\n Using random starting location")
+        Z_init <- matrix(stats::rnorm(k, sd = em_z_start_sd), nrow = k)
     }
 
     if (var_scale) {
@@ -700,8 +758,15 @@ uniform_succ_em <- function(Y, alpha, sig_diag, a_seq, b_seq,
     pi_new <- pi_Z[1:M]
     ##plot(c(a_seq, 0, b_seq), pi_new, type = "h", ylab = expression(pi), xlab = "a or b",
     ##     ylim = c(0,1))
-    llike_current <- succotash_llike_unif(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
-                                          var_scale = var_scale)
+    llike_current <- succotash_llike_unif(pi_Z = pi_Z,
+                                          lambda = lambda,
+                                          alpha = alpha, Y = Y,
+                                          a_seq = a_seq,
+                                          b_seq = b_seq,
+                                          sig_diag = sig_diag,
+                                          var_scale = var_scale,
+                                          likelihood = likelihood,
+                                          df = df)
     ##mtext(side = 3, paste("llike =", round(llike_current)))
 
     if (optmethod == "coord") {
@@ -710,9 +775,14 @@ uniform_succ_em <- function(Y, alpha, sig_diag, a_seq, b_seq,
                                              b_seq = b_seq, sig_diag = sig_diag,
                                              print_ziter = print_ziter,
                                              newt_itermax = em_itermax, tol = em_tol,
-                                             var_scale = var_scale)
+                                             var_scale = var_scale, likelihood = likelihood,
+                                             df = df)
         pi_Z_new <- coord_out$pi_Z
     } else if (optmethod == "em") {
+        if (likelihood == "t") {
+            stop("EM too janky for t-likelihood,\nuse optmethod = \"coord\" instead.")
+        }
+        message("EM selected when coordinate ascent is recommended for uniform mixtures,\nbut here goes nothing!")
         sq_out <- SQUAREM::fpiter(par = pi_Z, lambda = lambda, alpha = alpha,
                                   Y = Y, a_seq = a_seq, b_seq = b_seq,
                                   sig_diag = sig_diag, var_scale = var_scale,
@@ -735,7 +805,8 @@ uniform_succ_em <- function(Y, alpha, sig_diag, a_seq, b_seq,
     llike_current <- succotash_llike_unif(pi_Z = c(pi_new, Z_new, scale_val), lambda = lambda,
                                           alpha = alpha, Y = Y, a_seq = a_seq,
                                           b_seq = b_seq, sig_diag = sig_diag,
-                                          var_scale = TRUE)
+                                          var_scale = TRUE, likelihood = likelihood,
+                                          df = df)
     ## var_scale = TRUE here b/c scale_val is 1 is var_scale = FALSE for realz
 
     ## DEFUNCT CODE -----------------------------------------------------------------
