@@ -32,6 +32,7 @@ To install, run the following code in `R`:
 ``` r
 install.packages(c("devtools", "SQUAREM"))
 devtools::install_github("stephens999/ashr")
+devtools::install_github("dcgerard/vicar")
 devtools::install_github("dcgerard/succotashr")
 ```
 
