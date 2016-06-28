@@ -79,6 +79,7 @@ test_that("succotash_given_alpha will actually run with var_scale = TRUE", {
     Y <- 2 * rnorm(p) + alpha %*% Z
 
     pzout <- succotash_given_alpha(Y, alpha, sig_diag, var_scale = TRUE)
+    expect_true(pzout$llike >= pzout$null_llike)
 
 }
 )
@@ -86,8 +87,8 @@ test_that("succotash_given_alpha will actually run with var_scale = TRUE", {
 
 test_that("two-step actually works", {
     set.seed(888)
-    p <- 11
-    n <- 5
+    p <- 23
+    n <- 13
     k <- 1
     q <- 2
     pi_vals <- c(0.5, 0.3, 0.2)
@@ -103,13 +104,17 @@ test_that("two-step actually works", {
     Y     <- X %*% beta + Z %*% alpha + E
 
     suc0 <- succotash(Y = Y, X = X, k = k, two_step = FALSE, var_scale = TRUE, optmethod = "em")
+
     new_scale <- suc0$scale_val * n / (n - k - q)
     suc1 <- succotash(Y = Y, X = X, k = k, two_step = FALSE, inflate_var = new_scale,
                       var_scale = FALSE, optmethod = "em")
     suc2 <- succotash(Y = Y, X = X, k = k, two_step = TRUE, var_scale = TRUE, optmethod = "em")
 
+    expect_true(suc0$llike >= suc0$null_llike)
+    expect_true(suc1$llike >= suc1$null_llike)
+    expect_true(suc2$llike >= suc2$null_llike)
     expect_equal(suc0$sig_diag_scaled * n / (n - k - q),
                  suc1$sig_diag_scaled)
-    expect_equal(suc1$sig_diag_scaled, suc2$sig_diag_scaled, tol = 10 ^ -4)
+    expect_equal(suc1$sig_diag_scaled, suc2$sig_diag_scaled, tol = 10 ^ -3)
 }
 )

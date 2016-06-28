@@ -407,7 +407,7 @@ succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
 
     likelihood = match.arg(likelihood, c("normal", "t"))
     if (likelihood == "normal") {
-        df <- 1000
+        df <- Inf
     } else if (likelihood == "t" & is.null(df)) {
         stop("t likelihood specified but df is null")
     }
@@ -522,18 +522,20 @@ succotash_llike_unif <- function(pi_Z, lambda, alpha, Y, a_seq, b_seq, sig_diag,
 #'     \code{\link{succotash_unif_fixed}}
 #'
 #' @export
-uniform_succ_given_alpha <-
-  function(Y, alpha, sig_diag, num_em_runs = 2,
-           a_seq = NULL, b_seq = NULL, lambda = NULL,
-           em_itermax = 200, em_tol = 10 ^ -6, pi_init = NULL, Z_init = NULL,
-           em_z_start_sd = 1, pi_init_type = "random",
-           lambda_type = "zero_conc", print_progress = TRUE, print_ziter = FALSE,
-           true_Z = NULL, var_scale = TRUE, optmethod = c("coord", "em"),
-           likelihood = c("normal", "t"), df = NULL) {
+uniform_succ_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2,
+                                     a_seq = NULL, b_seq = NULL, lambda = NULL,
+                                     em_itermax = 200, em_tol = 10 ^ -6, pi_init = NULL, Z_init = NULL,
+                                     em_z_start_sd = 1, pi_init_type = c("random", "uniform", "zero_conc"),
+                                     lambda_type = c("zero_conc", "ones"), print_progress = TRUE, print_ziter = FALSE,
+                                     true_Z = NULL, var_scale = TRUE, optmethod = c("coord", "em"),
+                                     likelihood = c("normal", "t"), df = NULL,
+                                     z_init_type = c("null_mle", "random"),
+                                     var_scale_init_type = c("null_mle", "one", "random")) {
+
     p <- nrow(Y)
     ## k <- ncol(alpha)
 
-    likelihood = match.arg(likelihood, c("normal", "t"))
+    likelihood = match.arg(likelihood)
     if (likelihood == "normal") {
         df <- 1000
     } else if (likelihood == "t" & is.null(df)) {
@@ -542,37 +544,42 @@ uniform_succ_given_alpha <-
         stop("needs to be either a t likelihood or a normal likelihood")
     }
 
-    optmethod <- match.arg(optmethod,  c("coord", "em"))
+    optmethod           <- match.arg(optmethod)
+    lambda_type         <- match.arg(lambda_type)
+    pi_init_type        <- match.arg(pi_init_type)
+    z_init_type         <- match.arg(z_init_type)
+    var_scale_init_type <- match.arg(var_scale_init_type)
+
 
     ## set up grid
     if (is.null(a_seq)) {
-      a_max <- 2 * sqrt(max(Y ^ 2 - sig_diag))
-      a_min <- sqrt(min(sig_diag)) / 10
-      if (a_max < 0) {
-        a_max <- 8 * a_min
-      }
-      a_current <- a_min
-      a_seq <- a_min
-      mult_fact <- sqrt(2)
-      while (a_current <= a_max) {
-        a_current <- a_current * mult_fact
-        a_seq <- c(a_seq, a_current)
-      }
-      a_seq <- sort(-1 * a_seq)
+        a_max <- 2 * sqrt(max(Y ^ 2 - sig_diag))
+        a_min <- sqrt(min(sig_diag)) / 10
+        if (a_max < 0) {
+            a_max <- 8 * a_min
+        }
+        a_current <- a_min
+        a_seq <- a_min
+        mult_fact <- sqrt(2)
+        while (a_current <= a_max) {
+            a_current <- a_current * mult_fact
+            a_seq <- c(a_seq, a_current)
+        }
+        a_seq <- sort(-1 * a_seq)
     }
     if (is.null(b_seq)) {
-      b_max <- 2 * sqrt(max(Y ^ 2 - sig_diag))
-      b_min <- sqrt(min(sig_diag)) / 10
-      if (b_max < 0) {
-        b_max <- 8 * b_min
-      }
-      b_current <- b_min
-      b_seq <- b_min
-      mult_fact <- sqrt(2)
-      while (b_current <= b_max) {
-        b_current <- b_current * mult_fact
-        b_seq <- c(b_seq, b_current)
-      }
+        b_max <- 2 * sqrt(max(Y ^ 2 - sig_diag))
+        b_min <- sqrt(min(sig_diag)) / 10
+        if (b_max < 0) {
+            b_max <- 8 * b_min
+        }
+        b_current <- b_min
+        b_seq <- b_min
+        mult_fact <- sqrt(2)
+        while (b_current <= b_max) {
+            b_current <- b_current * mult_fact
+            b_seq <- c(b_seq, b_current)
+        }
     }
 
     M <- length(a_seq) + length(b_seq) + 1 ## plus 1 for pointmass at 0
@@ -580,11 +587,11 @@ uniform_succ_given_alpha <-
 
 
     if (is.null(lambda)) {
-      if (lambda_type == "unif") {
-        lambda <- rep(1, M)
-      } else if (lambda_type == "zero_conc") {
-        lambda <- c(rep(1, length = length(a_seq)), 10, rep(1, length = length(b_seq)))
-      }
+        if (lambda_type == "unif") {
+            lambda <- rep(1, M)
+        } else if (lambda_type == "zero_conc") {
+            lambda <- c(rep(1, length = length(a_seq)), 10, rep(1, length = length(b_seq)))
+        }
     }
 
 
@@ -602,7 +609,9 @@ uniform_succ_given_alpha <-
                               true_Z = true_Z, var_scale = var_scale,
                               optmethod = optmethod,
                               likelihood = likelihood,
-                              df = df)
+                              df = df,
+                              z_init_type = z_init_type,
+                              var_scale_init_type = var_scale_init_type)
 
     ## Random init for other EM algorithms.
     if (num_em_runs > 1) {
@@ -620,12 +629,43 @@ uniform_succ_given_alpha <-
                                       true_Z = true_Z, var_scale = var_scale,
                                       optmethod = optmethod,
                                       likelihood = likelihood,
-                                      df = df)
+                                      df = df,
+                                      z_init_type = z_init_type,
+                                      var_scale_init_type = var_scale_init_type)
             if (em_new$llike > em_out$llike) {
                 em_out <- em_new
             }
         }
     }
+
+    ## null likelihood --------------------------------------------------
+    if (likelihood == "normal") {
+        Zhat_null <- solve(t(alpha) %*% diag(1 / sig_diag) %*% alpha) %*%
+            t(alpha) %*% diag(1 / sig_diag) %*% Y
+        if (var_scale) {
+            resid_mat <- Y - alpha %*% Zhat_null
+            scale_val_null <- mean(resid_mat ^ 2 / sig_diag)
+        } else {
+            scale_val_null <- 1
+        }
+        null_llike <- succotash_llike(pi_Z = c(1, Zhat_null, scale_val_null),
+                                      lambda = 1, alpha = alpha, Y = Y,
+                                      tau_seq = 0, sig_diag = sig_diag,
+                                      var_scale = TRUE)
+    } else if (likelihood == "t") {
+        tregress_out <- vicar::tregress_em(Y = Y, alpha = alpha, sig_diag = sig_diag,
+                                           nu = df)
+        Zhat_null      <- tregress_out$Z
+        scale_val_null <- tregress_out$lambda
+        null_llike <- succotash_llike_unif(pi_Z = c(1, Zhat_null, scale_val_null),
+                                           lambda = 1, alpha = alpha, Y = Y, a_seq = NULL,
+                                           b_seq = NULL, sig_diag = sig_diag,
+                                           var_scale = TRUE,
+                                           likelihood = "t",
+                                           df = df)
+    }
+
+    ## posterior summaries -----------------------------------------------
     pi_current    <- em_out$pi_new
     Z_current     <- em_out$Z_new
     ## llike_current <- em_out$llike
@@ -682,8 +722,9 @@ uniform_succ_given_alpha <-
     return(list(Z = Z_current, pi_vals = pi_current,
                 scale_val = scale_val, a_seq = a_seq, b_seq = b_seq,
                 lfdr = lfdr, lfsr = lfsr, betahat = betahat,
-                qvals = qvals, pi0 = pi0))
-  }
+                qvals = qvals, pi0 = pi0,
+                llike = em_out$llike, null_like = null_llike))
+}
 
 #' EM algorithm for second step of SUCCOTASH
 #'
@@ -699,12 +740,16 @@ uniform_succ_em <- function(Y, alpha, sig_diag, a_seq, b_seq,
                             em_tol = 10 ^ -3,
                             pi_init_type = c("random", "uniform", "zero_conc"), true_Z = NULL,
                             var_scale = TRUE, optmethod = c("coord", "em"),
-                            likelihood = c("normal", "t"), df = NULL) {
+                            likelihood = c("normal", "t"), df = NULL,
+                            z_init_type = c("null_mle", "random"),
+                            var_scale_init_type = c("null_mle", "one", "random")) {
 
-    optmethod    <- match.arg(optmethod, c("coord", "em"))
-    pi_init_type <- match.arg(pi_init_type, c("random", "uniform", "zero_conc"))
+    optmethod           <- match.arg(optmethod)
+    pi_init_type        <- match.arg(pi_init_type)
+    z_init_type         <- match.arg(z_init_type)
+    var_scale_init_type <- match.arg(var_scale_init_type)
 
-    likelihood = match.arg(likelihood, c("normal", "t"))
+    likelihood = match.arg(likelihood)
     if (likelihood == "normal") {
         df <- 1000
     } else if (likelihood == "t" & is.null(df)) {
@@ -744,15 +789,40 @@ uniform_succ_em <- function(Y, alpha, sig_diag, a_seq, b_seq,
       }
     }
 
-    if (is.null(Z_init)) {
-        Z_init <- matrix(stats::rnorm(k, sd = em_z_start_sd), nrow = k)
+
+
+    if (is.null(alpha)) {
+        ## do nothing
+    } else if (is.null(Z_init)) {
+        if (z_init_type == "null_mle") {
+            Z_init <- solve(t(alpha) %*% diag(1 / sig_diag) %*% alpha) %*% t(alpha) %*%
+                diag(1 / sig_diag) %*% Y
+        } else if (z_init_type == "random") {
+            Z_init <- matrix(stats::rnorm(k, sd = em_z_start_sd), nrow = k)
+        }
     } else if (length(Z_init) != k) {
-        message("Z_init not correct dimensions.\n Using random starting location")
-        Z_init <- matrix(stats::rnorm(k, sd = em_z_start_sd), nrow = k)
+        message("Z_init of the wrong length, using default initializations")
+        if (z_init_type == "null_mle") {
+            Z_init <- solve(t(alpha) %*% diag(1 / sig_diag) %*% alpha) %*% t(alpha) %*%
+                diag(1 / sig_diag) %*% Y
+        } else if (z_init_type == "random") {
+            Z_init <- matrix(stats::rnorm(k, sd = em_z_start_sd), nrow = k)
+        }
     }
 
     if (var_scale) {
-        pi_Z <- c(pi_init, Z_init, 1)
+        if (var_scale_init_type == "null_mle") {
+            resid_mat <- Y - alpha %*% Z_init
+            scale_val_init <- mean(resid_mat ^ 2 / sig_diag)
+        } else if (var_scale_init_type == "one") {
+            scale_val_init <- 1
+        } else if (var_scale_init_type == "random") {
+            scale_val_init <- stats::rchisq(n = 1, df = 1)
+        }
+    }
+
+    if (var_scale) {
+        pi_Z <- c(pi_init, Z_init, scale_val_init)
     } else {
         pi_Z <- c(pi_init, Z_init)
     }

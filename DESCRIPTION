@@ -13,7 +13,8 @@ LazyData: TRUE
 Imports:
     SQUAREM (>= 2014.8-1),
     ashr,
-    assertthat
+    assertthat,
+    vicar
 Suggests:
     cate (>= 1.0.4),
     testthat,

@@ -9,7 +9,8 @@ succotash_em(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL,
   z_start_sd = 1, print_note = FALSE, pi_init_type = c("random",
   "uniform", "zero_conc"), lambda_type = c("zero_conc", "ones"),
   lambda0 = 10, plot_new_ests = FALSE, var_scale = TRUE,
-  optmethod = c("coord", "em"))
+  optmethod = c("coord", "em"), z_init_type = c("null_mle", "random"),
+  var_scale_init_type = c("null_mle", "one", "random"))
 }
 \arguments{
 \item{Y}{A matrix of dimension \code{p} by \code{1}. These are the
@@ -91,8 +92,8 @@ variances (\code{TRUE}) or not (\code{FALSE}).}
   \code{llike} A numeric. The final value of the SUCCOTASH
   log-likelihood.
 
-  \code{tau_seq} A vector of length \code{M}. The variances of the
-  mixing distribution.
+  \code{tau_seq} A vector of length \code{M}. The standard
+  deviations (not variances) of the mixing distribution.
 }
 \description{
 Let \eqn{Y} (\eqn{p} by \eqn{1}) be multivariate normal with mean

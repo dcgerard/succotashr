@@ -222,19 +222,30 @@ pca_shrinkvar <- function(Y, k, df = "rank_based") {
 }
 
 
-#' Basic PCA
+
+#' Basic PCA.
 #'
-#' Most if not all of code is from package \code{cate}. This is mostly
-#' so people don't have to install sva and leapp if they want to use
-#' it.
+#' Most of this code is from the package \code{cate}. I corrected some
+#' problems. Specifically, I allow \code{r = 0} and I included a few
+#' needed \code{drop = FALSE} terms. I also divide by \code{nrow(Y) -
+#' r} rather than by \code{nrow(Y)}.
 #'
 #'
 #' @param Y A matrix of numerics. The data.
 #' @param r the rank.
+#'
+#' @author David Gerard
 pca_naive <- function (Y, r) {
-    svd_Y <- svd(Y)
-    Gamma <- svd_Y$v[, 1:r] %*% diag(svd_Y$d[1:r], r, r) / sqrt(nrow(Y))
-    Z <- sqrt(nrow(Y)) * svd_Y$u[, 1:r]
-    Sigma <- apply(Y - Z %*% t(Gamma), 2, function(x) mean(x ^ 2))
+    if (r == 0) {
+        Gamma <- NULL
+        Z <- NULL
+        Sigma <- apply(Y, 2, function(x) mean(x ^ 2))
+    } else {
+        svd_Y <- svd(Y)
+        Gamma <- svd_Y$v[, 1:r, drop = FALSE] %*% diag(svd_Y$d[1:r], r, r) /
+            sqrt(nrow(Y))
+        Z <- sqrt(nrow(Y)) * svd_Y$u[, 1:r, drop = FALSE]
+        Sigma <- apply(Y - Z %*% t(Gamma), 2, function(x) sum(x ^ 2)) / (nrow(Y) - r)
+    }
     return(list(Gamma = Gamma, Z = Z, Sigma = Sigma))
 }

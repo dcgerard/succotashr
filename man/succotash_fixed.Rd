@@ -42,7 +42,8 @@ variances (\code{TRUE}) or not (\code{FALSE}).}
     inflation parameter.
 }
 \description{
-This is a fixed-point iteration for the SUCCOTASH EM algorithm. This updates
-the estimte of the prior and the estimate of the hidden covariates.
+This is a fixed-point iteration for the SUCCOTASH EM
+algorithm. This updates the estimte of the prior and the estimate
+of the hidden covariates.
 }
 

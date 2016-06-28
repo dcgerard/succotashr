@@ -310,7 +310,7 @@ llike_unif_simp <- function(Y, Z, pi_vals, alpha, sig_diag, left_seq, right_seq,
 
     likelihood = match.arg(likelihood, c("normal", "t"))
     if (likelihood == "normal") {
-        df <- 1000
+        df <- Inf
     } else if (likelihood == "t" & is.null(df)) {
         stop("t likelihood specified but df is null")
     }

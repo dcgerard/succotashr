@@ -1,7 +1,8 @@
 #' A fixed-point iteration of the EM algorithm.
 #'
-#' This is a fixed-point iteration for the SUCCOTASH EM algorithm. This updates
-#' the estimte of the prior and the estimate of the hidden covariates.
+#' This is a fixed-point iteration for the SUCCOTASH EM
+#' algorithm. This updates the estimte of the prior and the estimate
+#' of the hidden covariates.
 #'
 #' @param pi_Z A vector. The first \code{M} values are the current
 #'     values of \eqn{\pi}. The last \code{k} values are the current
@@ -174,8 +175,9 @@ succotash_llike <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag, plot_new_
 
     var_mat <- outer(scale_val * sig_diag, tau_seq ^ 2, "+")
 
-    top_vals <- t(pi_current * t(stats::dnorm(matrix(rep(Y, M), ncol = M, nrow = p), mean = mean_mat,
-                                       sd = sqrt(var_mat))))
+    top_vals <- t(pi_current * t(stats::dnorm(matrix(rep(Y, M), ncol = M, nrow = p),
+                                              mean = mean_mat,
+                                              sd = sqrt(var_mat))))
 
     ## which_lambda <- lambda == 1
     ## if (sum(which_lambda) > 0) {
@@ -246,18 +248,22 @@ succotash_llike <- function(pi_Z, lambda, alpha, Y, tau_seq, sig_diag, plot_new_
 #'   \code{llike} A numeric. The final value of the SUCCOTASH
 #'   log-likelihood.
 #'
-#'   \code{tau_seq} A vector of length \code{M}. The variances of the
-#'   mixing distribution.
+#'   \code{tau_seq} A vector of length \code{M}. The standard
+#'   deviations (not variances) of the mixing distribution.
 succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lambda = NULL,
                          Z_init = NULL, itermax = 1500, tol = 10 ^ -6, z_start_sd = 1,
                          print_note = FALSE, pi_init_type = c("random", "uniform", "zero_conc"),
                          lambda_type = c("zero_conc", "ones"),
                          lambda0 = 10, plot_new_ests = FALSE, var_scale = TRUE,
-                         optmethod = c("coord", "em")) {
+                         optmethod = c("coord", "em"),
+                         z_init_type = c("null_mle", "random"),
+                         var_scale_init_type = c("null_mle", "one", "random")) {
 
-    optmethod    <- match.arg(optmethod, c("coord", "em"))
-    pi_init_type <- match.arg(pi_init_type, c("random", "uniform", "zero_conc"))
-    lambda_type  <- match.arg(lambda_type,  c("zero_conc", "ones"))
+    optmethod           <- match.arg(optmethod)
+    pi_init_type        <- match.arg(pi_init_type)
+    lambda_type         <- match.arg(lambda_type)
+    z_init_type         <- match.arg(z_init_type)
+    var_scale_init_type <- match.arg(var_scale_init_type)
 
     if (print_note) {
         cat("Working on EM.\n")
@@ -321,15 +327,37 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
     if (is.null(alpha)) {
         ## do nothing
     } else if (is.null(Z_init)) {
-        Z_init <- matrix(stats::rnorm(k, sd = z_start_sd), nrow = k)
+        if (z_init_type == "null_mle") {
+            Z_init <- solve(t(alpha) %*% diag(1 / sig_diag) %*% alpha) %*% t(alpha) %*%
+                diag(1 / sig_diag) %*% Y
+        } else if (z_init_type == "random") {
+            Z_init <- matrix(stats::rnorm(k, sd = z_start_sd), nrow = k)
+        }
     } else if (length(Z_init) != k) {
-        Z_init <- matrix(stats::rnorm(k, sd = z_start_sd), nrow = k)
+        message("Z_init of the wrong length, using default initializations")
+        if (z_init_type == "null_mle") {
+            Z_init <- solve(t(alpha) %*% diag(1 / sig_diag) %*% alpha) %*% t(alpha) %*%
+                diag(1 / sig_diag) %*% Y
+        } else if (z_init_type == "random") {
+            Z_init <- matrix(stats::rnorm(k, sd = z_start_sd), nrow = k)
+        }
+    }
+
+    if (var_scale) {
+        if (var_scale_init_type == "null_mle") {
+            resid_mat <- Y - alpha %*% Z_init
+            scale_val_init <- mean(resid_mat ^ 2 / sig_diag)
+        } else if (var_scale_init_type == "one") {
+            scale_val_init <- 1
+        } else if (var_scale_init_type == "random") {
+            scale_val_init <- stats::rchisq(n = 1, df = 1)
+        }
     }
 
     if (!var_scale) {
         pi_Z <- c(pi_init, Z_init)
     } else {
-        pi_Z <- c(pi_init, Z_init, 1)
+        pi_Z <- c(pi_init, Z_init, scale_val_init)
     }
 
     if (optmethod == "em") {
@@ -438,15 +466,16 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
 #'     variances (\code{TRUE}) or not (\code{FALSE}).
 #' @param optmethod Should we use coordinate ascent (\code{optmethod =
 #'     "coord"}) or an EM algorithm (\code{optmethod = "em"}).
+#' @inheritParams succotash
 #'
-#' @return  \code{Z} A matrix  of dimension \code{k} by  \code{1}. The
+#' @return \code{Z} A matrix of dimension \code{k} by \code{1}. The
 #'     estimates of the confounder covariates.
 #'
 #'   \code{pi_vals} A vector of length \code{M}. The estimates of the
 #'   mixing proportions.
 #'
-#'   \code{tau_seq} A vector of length \code{M}. The variances of the
-#'   mixing distribution.
+#'   \code{tau_seq} A vector of length \code{M}. The standard
+#'   deviations (not variances) of the mixing distribution.
 #'
 #'   \code{lfdr} (local false discovery rate) A vector of length
 #'   \code{p}. The posterior probability that \eqn{\beta_j = 0}.
@@ -459,6 +488,12 @@ succotash_em <- function(Y, alpha, sig_diag, tau_seq = NULL, pi_init = NULL, lam
 #'   \code{betahat} A vector of length \code{p}. The posterior
 #'   estimates of \eqn{\beta}.
 #'
+#'   \code{llike} The log-likelihood of the maximum likelihood
+#'   estimator.
+#'
+#'   \code{null_llike} The log-likelihood of the maximum likelihood
+#'   estimator where the unimodal density is a point mass at 0.
+#'
 #' @export
 #'
 #' @seealso \code{\link{succotash_em}},
@@ -467,11 +502,17 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
                                   tau_seq = NULL, em_pi_init = NULL, lambda = NULL,
                                   em_Z_init = NULL, em_itermax = 500, em_tol = 10 ^ -6,
                                   em_z_start_sd = 1,
-                                  lambda_type = "zero_conc", lambda0 = 10,
+                                  lambda_type = c("zero_conc", "ones"), lambda0 = 10,
                                   plot_new_ests = FALSE,
-                                  var_scale = TRUE, optmethod = c("coord", "em")) {
+                                  var_scale = TRUE, optmethod = c("coord", "em"),
+                                  z_init_type = c("null_mle", "random"),
+                                  var_scale_init_type = c("null_mle", "one", "random")) {
 
-    optmethod = match.arg(optmethod, c("coord", "em"))
+    optmethod           <- match.arg(optmethod)
+    lambda_type         <- match.arg(lambda_type)
+    z_init_type         <- match.arg(z_init_type)
+    var_scale_init_type <- match.arg(var_scale_init_type)
+
 
     ## @param em_pi_init_type How should we choose the initial values of
     ## \eqn{\pi}.  Possible values of \code{"random"},
@@ -493,7 +534,9 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
                            lambda0 = lambda0,
                            plot_new_ests = plot_new_ests,
                            var_scale = var_scale,
-                           optmethod = optmethod)
+                           optmethod = optmethod,
+                           z_init_type = z_init_type,
+                           var_scale_init_type = var_scale_init_type)
 
     if (num_em_runs > 1) {
         for (index in 2:num_em_runs) {
@@ -508,7 +551,9 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
                                    lambda0 = lambda0,
                                    plot_new_ests = plot_new_ests,
                                    var_scale = var_scale,
-                                   optmethod = optmethod)
+                                   optmethod = optmethod,
+                                   z_init_type = z_init_type,
+                                   var_scale_init_type = var_scale_init_type)
             pi_diff <- sum(abs(em_new$pi_vals - em_out$pi_vals))
             z_diff <- sum(abs(em_new$Z - em_out$Z))
             if (em_out$llike < em_new$llike) {
@@ -524,6 +569,22 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
         }
     }
 
+
+    ## log-likelihood under all null setting
+    Zhat_null <- solve(t(alpha) %*% diag(1 / sig_diag) %*% alpha) %*%
+        t(alpha) %*% diag(1 / sig_diag) %*% Y
+    if (var_scale) {
+        resid_mat <- Y - alpha %*% Zhat_null
+        scale_val_null <- mean(resid_mat ^ 2 / sig_diag)
+    } else {
+        scale_val_null <- 1
+    }
+    null_llike <- succotash_llike(pi_Z = c(1, Zhat_null, scale_val_null),
+                                  lambda = 1, alpha = alpha, Y = Y,
+                                  tau_seq = 0, sig_diag = sig_diag,
+                                  var_scale = TRUE)
+
+    ## summaries to return
     sum_out <- succotash_summaries(Y = Y, Z = em_out$Z, pi_vals = em_out$pi_vals,
                                    alpha = alpha, sig_diag = sig_diag, tau_seq = em_out$tau_seq,
                                    scale_val = em_out$scale_val)
@@ -533,44 +594,50 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
 
     return(list(Z = em_out$Z, pi_vals = em_out$pi_vals, tau_seq = em_out$tau_seq,
                 lfdr = sum_out$lfdr, lfsr = sum_out$lfsr, qvals = q_vals,
-                betahat = sum_out$beta_hat, pi0 = pi0, scale_val = em_out$scale_val))
+                betahat = sum_out$beta_hat, pi0 = pi0, scale_val = em_out$scale_val,
+                llike = em_out$llike, null_llike = null_llike))
 }
 
 
 #' Surrogate and Confounder Correction Occuring Together with Adaptive
 #' SHrinkage.
 #'
-#' This function implements the full SUCCOTASH method. First, it rotates the
-#' response and explanatory variables into a part that we use to estimate the
-#' confounding variables and the variances, and a part that we use to estimate
-#' the coefficients of the observed covariates. This function will implement a
-#' factor analysis for the first part then run
-#' \code{\link{succotash_given_alpha}} for the second part.
+#' This function implements the full SUCCOTASH method. First, it
+#' rotates the response and explanatory variables into a part that we
+#' use to estimate the confounding variables and the variances, and a
+#' part that we use to estimate the coefficients of the observed
+#' covariates. This function will implement a factor analysis for the
+#' first part then run \code{\link{succotash_given_alpha}} for the
+#' second part.
 #'
-#' The assumed mode is \deqn{Y = X\beta + Z\alpha + E.} \eqn{Y} is a \eqn{n} by
-#' \code{p} matrix of response varaibles. For example, each row might be an
-#' array of log-transformed and quantile normalized gene-expression data.
-#' \eqn{X} is a \eqn{n} by \eqn{q} matrix of observed covariates. It is assumed
-#' that all but the last column of which contains nuisance parameters. For
-#' example, the first column might be a vector of ones to include an intercept.
-#' \eqn{\beta} is a \eqn{q} by \eqn{p} matrix of corresponding coefficients.
-#' \eqn{Z} is a \eqn{n} by \eqn{k} matrix of confounder variables. \eqn{\alpha}
-#' is the corresponding \eqn{k} by \eqn{p} matrix of coefficients for the
-#' unobserved confounders. \eqn{E} is a \eqn{n} by \eqn{p} matrix of error
-#' terms. \eqn{E} is assumed to be matrix normal with identity row covariance
-#' and diagonal column covariance \eqn{\Sigma}. That is, the columns are
-#' heteroscedastic while the rows are homoscedastic independent.
+#' The assumed mode is \deqn{Y = X\beta + Z\alpha + E.} \eqn{Y} is a
+#' \eqn{n} by \code{p} matrix of response varaibles. For example, each
+#' row might be an array of log-transformed and quantile normalized
+#' gene-expression data.  \eqn{X} is a \eqn{n} by \eqn{q} matrix of
+#' observed covariates. It is assumed that all but the last column of
+#' which contains nuisance parameters. For example, the first column
+#' might be a vector of ones to include an intercept.  \eqn{\beta} is
+#' a \eqn{q} by \eqn{p} matrix of corresponding coefficients.  \eqn{Z}
+#' is a \eqn{n} by \eqn{k} matrix of confounder
+#' variables. \eqn{\alpha} is the corresponding \eqn{k} by \eqn{p}
+#' matrix of coefficients for the unobserved confounders. \eqn{E} is a
+#' \eqn{n} by \eqn{p} matrix of error terms. \eqn{E} is assumed to be
+#' matrix normal with identity row covariance and diagonal column
+#' covariance \eqn{\Sigma}. That is, the columns are heteroscedastic
+#' while the rows are homoscedastic independent.
 #'
 #' This function will first rotate \eqn{Y} and \eqn{X} using the QR
-#' decomposition. This separates the model into three parts. The first part only
-#' contains nuisance parameters, the second part contains the coefficients of
-#' interest, and the third part contains the confounders. \code{succotash}
-#' applies a factor analysis to the third part to estimate the confounding
-#' factors, then runs an EM algorithm on the second part to estimate the
-#' coefficients of interest.
+#' decomposition. This separates the model into three parts. The first
+#' part only contains nuisance parameters, the second part contains
+#' the coefficients of interest, and the third part contains the
+#' confounders. \code{succotash} applies a factor analysis to the
+#' third part to estimate the confounding factors, then runs an EM
+#' algorithm on the second part to estimate the coefficients of
+#' interest.
 #'
-#' The possible forms of factor analysis are a regularized maximum likelihood
-#' estimator, or a quasi-mle implemented in the package \code{cate}.
+#' Many forms of factor analyses are avaiable. The default is PCA with
+#' the column-wise residual mean-squares as the estimates of the
+#' column-wise variances.
 #'
 #' @param Y An \code{n} by \code{p} matrix of response variables.
 #' @param X An \code{n} by \code{q} matrix of covariates. Only the
@@ -636,9 +703,18 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
 #' @param use_ols_se A logical. Should we use the standard formulas
 #'     for OLS of X on Y to get the estimates of the variances
 #'     (\code{TRUE}) or not (\code{FALSE})
+#' @param z_init_type How should we initiate the confounders? At the
+#'     all-null MLE (\code{"null_mle"}) or from iid standard normals
+#'     (\code{"random"})?
+#' @param var_scale_init_type If \code{var_scale = TRUE}, how should
+#'     we initiate the variance inflaiton parameter? From the all-null
+#'     MLE (\code{"null_mle"}), at no inflation (\code{"one"}), or
+#'     from a chi-squared distribution with one degree of freedom
+#'     (\code{"random"})?
 #'
 #'
-#' @return See \code{\link{succotash_given_alpha}} for details of output.
+#' @return See \code{\link{succotash_given_alpha}} for details of
+#'     output.
 #'
 #'   \code{Y1_scaled} The OLS estimates.
 #'
@@ -649,30 +725,35 @@ succotash_given_alpha <- function(Y, alpha, sig_diag, num_em_runs = 2, print_ste
 #'   \code{sig_diag} The estimates of the gene-wise variances (but not
 #'   times \code{scale_val}).
 #'
-#'   \code{pi0} A non-negative numeric. The marginal probability of zero.
+#'   \code{pi0} A non-negative numeric. The marginal probability of
+#'   zero.
 #'
-#'   \code{alpha_scaled} The scaled version of the estimated coefficients of the
-#'   hidden confounders.
+#'   \code{alpha_scaled} The scaled version of the estimated
+#'   coefficients of the hidden confounders.
 #'
-#'   \code{Z} A vector of numerics. Estimated rotated confounder in second step
-#'   of succotash.
+#'   \code{Z} A vector of numerics. Estimated rotated confounder in
+#'   second step of succotash.
 #'
 #'   \code{pi_vals} A vector of numerics between 0 and 1. The mixing
 #'   proportions.
 #'
-#'   \code{tau_seq} A vector of non-negative numerics. The mixing variances.
+#'   \code{tau_seq} A vector of non-negative numerics. The mixing
+#'   standard deviations (not variances).
 #'
-#'   \code{lfdr} A vector of numerics between 0 and 1. The local false discovery
-#'   rate. I.e. the posterior probability of a coefficient being zero.
+#'   \code{lfdr} A vector of numerics between 0 and 1. The local false
+#'   discovery rate. I.e. the posterior probability of a coefficient
+#'   being zero.
 #'
-#'   \code{lfsr} A vector of numerics between 0 and 1. The local false sign
-#'   rate. I.e. the posterior probability of making a sign error if one chose
-#'   the most probable sign.
+#'   \code{lfsr} A vector of numerics between 0 and 1. The local false
+#'   sign rate. I.e. the posterior probability of making a sign error
+#'   if one chose the most probable sign.
 #'
-#'   \code{qvals} A vector of numerics between 0 and 1. The q-values. The
-#'   average error rate if we reject all hypotheses that have smaller q-value.
+#'   \code{qvals} A vector of numerics between 0 and 1. The
+#'   q-values. The average error rate if we reject all hypotheses that
+#'   have smaller q-value.
 #'
-#'   \code{betahat} A vector of numerics. The posterior mean of the coefficients.
+#'   \code{betahat} A vector of numerics. The posterior mean of the
+#'   coefficients.
 #'
 #' @export
 #'
@@ -686,23 +767,25 @@ succotash <- function(Y, X, k = NULL, sig_reg = 0.01, num_em_runs = 2,
                                     "homoPCA", "pca_shrinkvar", "mod_fa",
                                     "flash_hetero", "non_homo", "non_hetero",
                                     "non_shrinkvar"),
-                      lambda_type = "zero_conc", mix_type = "normal",
+                      lambda_type = c("zero_conc", "ones"),
+                      mix_type = c("normal", "uniform"),
                       likelihood = c("normal", "t"), lambda0 = 10,
                       tau_seq = NULL, em_pi_init = NULL,
                       plot_new_ests = FALSE, em_itermax = 200,
                       var_scale = TRUE, inflate_var = 1,
                       optmethod = c("coord", "em"),
-                      use_ols_se = FALSE) {
+                      use_ols_se = FALSE,
+                      z_init_type = c("null_mle", "random"),
+                      var_scale_init_type = c("null_mle", "one", "random")) {
     ncol_x <- ncol(X)
 
-    optmethod <- match.arg(optmethod,  c("coord", "em"))
-    fa_method <- match.arg(fa_method, c("pca", "reg_mle", "quasi_mle",
-                                        "homoPCA",
-                                        "pca_shrinkvar", "mod_fa",
-                                        "flash_hetero", "non_homo",
-                                        "non_hetero", "non_shrinkvar"))
-
-    likelihood <- match.arg(likelihood, c("normal", "t"))
+    optmethod           <- match.arg(optmethod)
+    lambda_type         <- match.arg(lambda_type)
+    fa_method           <- match.arg(fa_method)
+    likelihood          <- match.arg(likelihood)
+    mix_type            <- match.arg(mix_type)
+    z_init_type         <- match.arg(z_init_type)
+    var_scale_init_type <- match.arg(var_scale_init_type)
 
 
     ## Estimate number of hidden confounders with num.sv from sva package
@@ -829,7 +912,9 @@ succotash <- function(Y, X, k = NULL, sig_reg = 0.01, num_em_runs = 2,
                                                plot_new_ests = plot_new_ests,
                                                em_itermax = em_itermax,
                                                var_scale = var_scale,
-                                               optmethod = optmethod)
+                                               optmethod = optmethod,
+                                               z_init_type = z_init_type,
+                                               var_scale_init_type = var_scale_init_type)
         if (two_step) {
             new_scale <- suc_out_bland$scale_val * nrow(X) / (nrow(X) - k - ncol_x)
             sig_diag_scaled <- sig_diag_scaled * new_scale # inflate variance
@@ -845,7 +930,9 @@ succotash <- function(Y, X, k = NULL, sig_reg = 0.01, num_em_runs = 2,
                                              plot_new_ests = plot_new_ests,
                                              em_itermax = em_itermax,
                                              var_scale = FALSE,
-                                             optmethod = optmethod)
+                                             optmethod = optmethod,
+                                             z_init_type = z_init_type,
+                                             var_scale_init_type = var_scale_init_type)
             suc_out$scale_val <- new_scale
             suc_out$sig_diag_scaled <- sig_diag_scaled
         } else {
@@ -863,7 +950,9 @@ succotash <- function(Y, X, k = NULL, sig_reg = 0.01, num_em_runs = 2,
                                                   var_scale = var_scale,
                                                   optmethod = optmethod,
                                                   likelihood = likelihood,
-                                                  df = nu)
+                                                  df = nu,
+                                                  z_init_type = z_init_type,
+                                                  var_scale_init_type = var_scale_init_type)
         if (two_step) {
             new_scale <- suc_out_bland$scale_val * nrow(X) / (nrow(X) - k - ncol_x)
             sig_diag_scaled <- sig_diag_scaled * new_scale # inflate variance
@@ -877,7 +966,9 @@ succotash <- function(Y, X, k = NULL, sig_reg = 0.01, num_em_runs = 2,
                                                 var_scale = FALSE,
                                                 optmethod = optmethod,
                                                 likelihood = likelihood,
-                                                df = nu)
+                                                df = nu,
+                                                z_init_type = z_init_type,
+                                                var_scale_init_type = var_scale_init_type)
             suc_out$scale_val <- new_scale
             suc_out$sig_diag_scaled <- sig_diag_scaled
         } else {

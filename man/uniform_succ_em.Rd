@@ -9,7 +9,8 @@ uniform_succ_em(Y, alpha, sig_diag, a_seq, b_seq, pi_init = NULL,
   print_progress = FALSE, em_z_start_sd = 1, em_itermax = 200,
   em_tol = 10^-3, pi_init_type = c("random", "uniform", "zero_conc"),
   true_Z = NULL, var_scale = TRUE, optmethod = c("coord", "em"),
-  likelihood = c("normal", "t"), df = NULL)
+  likelihood = c("normal", "t"), df = NULL, z_init_type = c("null_mle",
+  "random"), var_scale_init_type = c("null_mle", "one", "random"))
 }
 \arguments{
 \item{Y}{A p by 1 matrix of numerics. The data.}
@@ -70,6 +71,16 @@ default.}
 
 \item{df}{The degrees of freedom of the the t-likelihood if
 \code{likleihood = "t"}.}
+
+\item{z_init_type}{How should we initiate the confounders? At the
+all-null MLE (\code{"null_mle"}) or from iid standard normals
+(\code{"random"})?}
+
+\item{var_scale_init_type}{If \code{var_scale = TRUE}, how should
+we initiate the variance inflaiton parameter? From the all-null
+MLE (\code{"null_mle"}), at no inflation (\code{"one"}), or
+from a chi-squared distribution with one degree of freedom
+(\code{"random"})?}
 }
 \description{
 EM algorithm for second step of SUCCOTASH

@@ -8,8 +8,10 @@ summaries.}
 succotash_given_alpha(Y, alpha, sig_diag, num_em_runs = 2,
   print_steps = FALSE, tau_seq = NULL, em_pi_init = NULL, lambda = NULL,
   em_Z_init = NULL, em_itermax = 500, em_tol = 10^-6, em_z_start_sd = 1,
-  lambda_type = "zero_conc", lambda0 = 10, plot_new_ests = FALSE,
-  var_scale = TRUE, optmethod = c("coord", "em"))
+  lambda_type = c("zero_conc", "ones"), lambda0 = 10,
+  plot_new_ests = FALSE, var_scale = TRUE, optmethod = c("coord", "em"),
+  z_init_type = c("null_mle", "random"), var_scale_init_type = c("null_mle",
+  "one", "random"))
 }
 \arguments{
 \item{Y}{A matrix of dimension \code{p} by \code{1}. These are the
@@ -73,16 +75,26 @@ variances (\code{TRUE}) or not (\code{FALSE}).}
 
 \item{optmethod}{Should we use coordinate ascent (\code{optmethod =
 "coord"}) or an EM algorithm (\code{optmethod = "em"}).}
+
+\item{z_init_type}{How should we initiate the confounders? At the
+all-null MLE (\code{"null_mle"}) or from iid standard normals
+(\code{"random"})?}
+
+\item{var_scale_init_type}{If \code{var_scale = TRUE}, how should
+we initiate the variance inflaiton parameter? From the all-null
+MLE (\code{"null_mle"}), at no inflation (\code{"one"}), or
+from a chi-squared distribution with one degree of freedom
+(\code{"random"})?}
 }
 \value{
-\code{Z} A matrix  of dimension \code{k} by  \code{1}. The
+\code{Z} A matrix of dimension \code{k} by \code{1}. The
     estimates of the confounder covariates.
 
   \code{pi_vals} A vector of length \code{M}. The estimates of the
   mixing proportions.
 
-  \code{tau_seq} A vector of length \code{M}. The variances of the
-  mixing distribution.
+  \code{tau_seq} A vector of length \code{M}. The standard
+  deviations (not variances) of the mixing distribution.
 
   \code{lfdr} (local false discovery rate) A vector of length
   \code{p}. The posterior probability that \eqn{\beta_j = 0}.
@@ -94,6 +106,12 @@ variances (\code{TRUE}) or not (\code{FALSE}).}
 
   \code{betahat} A vector of length \code{p}. The posterior
   estimates of \eqn{\beta}.
+
+  \code{llike} The log-likelihood of the maximum likelihood
+  estimator.
+
+  \code{null_llike} The log-likelihood of the maximum likelihood
+  estimator where the unimodal density is a point mass at 0.
 }
 \description{
 This function runs \code{\link{succotash_em}} repetitively, keeping

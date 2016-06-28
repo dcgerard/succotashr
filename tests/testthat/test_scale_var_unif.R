@@ -317,6 +317,6 @@ test_that("two-step actually works for uniform mixtures", {
 
     expect_equal(suc0$sig_diag_scaled * n / (n - k - q),
                  suc1$sig_diag_scaled)
-    expect_equal(suc2$sig_diag_scaled, suc1$sig_diag_scaled, tol = 10 ^ -4)
+    expect_equal(suc2$sig_diag_scaled, suc1$sig_diag_scaled, tol = 10 ^ -3)
 }
 )

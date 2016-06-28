@@ -8,11 +8,13 @@ SHrinkage.}
 succotash(Y, X, k = NULL, sig_reg = 0.01, num_em_runs = 2,
   z_start_sd = 1, two_step = TRUE, fa_method = c("pca", "reg_mle",
   "quasi_mle", "homoPCA", "pca_shrinkvar", "mod_fa", "flash_hetero", "non_homo",
-  "non_hetero", "non_shrinkvar"), lambda_type = "zero_conc",
-  mix_type = "normal", likelihood = c("normal", "t"), lambda0 = 10,
-  tau_seq = NULL, em_pi_init = NULL, plot_new_ests = FALSE,
-  em_itermax = 200, var_scale = TRUE, inflate_var = 1,
-  optmethod = c("coord", "em"), use_ols_se = FALSE)
+  "non_hetero", "non_shrinkvar"), lambda_type = c("zero_conc", "ones"),
+  mix_type = c("normal", "uniform"), likelihood = c("normal", "t"),
+  lambda0 = 10, tau_seq = NULL, em_pi_init = NULL,
+  plot_new_ests = FALSE, em_itermax = 200, var_scale = TRUE,
+  inflate_var = 1, optmethod = c("coord", "em"), use_ols_se = FALSE,
+  z_init_type = c("null_mle", "random"), var_scale_init_type = c("null_mle",
+  "one", "random"))
 }
 \arguments{
 \item{Y}{An \code{n} by \code{p} matrix of response variables.}
@@ -98,9 +100,20 @@ default.}
 \item{use_ols_se}{A logical. Should we use the standard formulas
 for OLS of X on Y to get the estimates of the variances
 (\code{TRUE}) or not (\code{FALSE})}
+
+\item{z_init_type}{How should we initiate the confounders? At the
+all-null MLE (\code{"null_mle"}) or from iid standard normals
+(\code{"random"})?}
+
+\item{var_scale_init_type}{If \code{var_scale = TRUE}, how should
+we initiate the variance inflaiton parameter? From the all-null
+MLE (\code{"null_mle"}), at no inflation (\code{"one"}), or
+from a chi-squared distribution with one degree of freedom
+(\code{"random"})?}
 }
 \value{
-See \code{\link{succotash_given_alpha}} for details of output.
+See \code{\link{succotash_given_alpha}} for details of
+    output.
 
   \code{Y1_scaled} The OLS estimates.
 
@@ -111,64 +124,74 @@ See \code{\link{succotash_given_alpha}} for details of output.
   \code{sig_diag} The estimates of the gene-wise variances (but not
   times \code{scale_val}).
 
-  \code{pi0} A non-negative numeric. The marginal probability of zero.
+  \code{pi0} A non-negative numeric. The marginal probability of
+  zero.
 
-  \code{alpha_scaled} The scaled version of the estimated coefficients of the
-  hidden confounders.
+  \code{alpha_scaled} The scaled version of the estimated
+  coefficients of the hidden confounders.
 
-  \code{Z} A vector of numerics. Estimated rotated confounder in second step
-  of succotash.
+  \code{Z} A vector of numerics. Estimated rotated confounder in
+  second step of succotash.
 
   \code{pi_vals} A vector of numerics between 0 and 1. The mixing
   proportions.
 
-  \code{tau_seq} A vector of non-negative numerics. The mixing variances.
+  \code{tau_seq} A vector of non-negative numerics. The mixing
+  standard deviations (not variances).
 
-  \code{lfdr} A vector of numerics between 0 and 1. The local false discovery
-  rate. I.e. the posterior probability of a coefficient being zero.
+  \code{lfdr} A vector of numerics between 0 and 1. The local false
+  discovery rate. I.e. the posterior probability of a coefficient
+  being zero.
 
-  \code{lfsr} A vector of numerics between 0 and 1. The local false sign
-  rate. I.e. the posterior probability of making a sign error if one chose
-  the most probable sign.
+  \code{lfsr} A vector of numerics between 0 and 1. The local false
+  sign rate. I.e. the posterior probability of making a sign error
+  if one chose the most probable sign.
 
-  \code{qvals} A vector of numerics between 0 and 1. The q-values. The
-  average error rate if we reject all hypotheses that have smaller q-value.
+  \code{qvals} A vector of numerics between 0 and 1. The
+  q-values. The average error rate if we reject all hypotheses that
+  have smaller q-value.
 
-  \code{betahat} A vector of numerics. The posterior mean of the coefficients.
+  \code{betahat} A vector of numerics. The posterior mean of the
+  coefficients.
 }
 \description{
-This function implements the full SUCCOTASH method. First, it rotates the
-response and explanatory variables into a part that we use to estimate the
-confounding variables and the variances, and a part that we use to estimate
-the coefficients of the observed covariates. This function will implement a
-factor analysis for the first part then run
-\code{\link{succotash_given_alpha}} for the second part.
+This function implements the full SUCCOTASH method. First, it
+rotates the response and explanatory variables into a part that we
+use to estimate the confounding variables and the variances, and a
+part that we use to estimate the coefficients of the observed
+covariates. This function will implement a factor analysis for the
+first part then run \code{\link{succotash_given_alpha}} for the
+second part.
 }
 \details{
-The assumed mode is \deqn{Y = X\beta + Z\alpha + E.} \eqn{Y} is a \eqn{n} by
-\code{p} matrix of response varaibles. For example, each row might be an
-array of log-transformed and quantile normalized gene-expression data.
-\eqn{X} is a \eqn{n} by \eqn{q} matrix of observed covariates. It is assumed
-that all but the last column of which contains nuisance parameters. For
-example, the first column might be a vector of ones to include an intercept.
-\eqn{\beta} is a \eqn{q} by \eqn{p} matrix of corresponding coefficients.
-\eqn{Z} is a \eqn{n} by \eqn{k} matrix of confounder variables. \eqn{\alpha}
-is the corresponding \eqn{k} by \eqn{p} matrix of coefficients for the
-unobserved confounders. \eqn{E} is a \eqn{n} by \eqn{p} matrix of error
-terms. \eqn{E} is assumed to be matrix normal with identity row covariance
-and diagonal column covariance \eqn{\Sigma}. That is, the columns are
-heteroscedastic while the rows are homoscedastic independent.
+The assumed mode is \deqn{Y = X\beta + Z\alpha + E.} \eqn{Y} is a
+\eqn{n} by \code{p} matrix of response varaibles. For example, each
+row might be an array of log-transformed and quantile normalized
+gene-expression data.  \eqn{X} is a \eqn{n} by \eqn{q} matrix of
+observed covariates. It is assumed that all but the last column of
+which contains nuisance parameters. For example, the first column
+might be a vector of ones to include an intercept.  \eqn{\beta} is
+a \eqn{q} by \eqn{p} matrix of corresponding coefficients.  \eqn{Z}
+is a \eqn{n} by \eqn{k} matrix of confounder
+variables. \eqn{\alpha} is the corresponding \eqn{k} by \eqn{p}
+matrix of coefficients for the unobserved confounders. \eqn{E} is a
+\eqn{n} by \eqn{p} matrix of error terms. \eqn{E} is assumed to be
+matrix normal with identity row covariance and diagonal column
+covariance \eqn{\Sigma}. That is, the columns are heteroscedastic
+while the rows are homoscedastic independent.
 
 This function will first rotate \eqn{Y} and \eqn{X} using the QR
-decomposition. This separates the model into three parts. The first part only
-contains nuisance parameters, the second part contains the coefficients of
-interest, and the third part contains the confounders. \code{succotash}
-applies a factor analysis to the third part to estimate the confounding
-factors, then runs an EM algorithm on the second part to estimate the
-coefficients of interest.
+decomposition. This separates the model into three parts. The first
+part only contains nuisance parameters, the second part contains
+the coefficients of interest, and the third part contains the
+confounders. \code{succotash} applies a factor analysis to the
+third part to estimate the confounding factors, then runs an EM
+algorithm on the second part to estimate the coefficients of
+interest.
 
-The possible forms of factor analysis are a regularized maximum likelihood
-estimator, or a quasi-mle implemented in the package \code{cate}.
+Many forms of factor analyses are avaiable. The default is PCA with
+the column-wise residual mean-squares as the estimates of the
+column-wise variances.
 }
 \seealso{
 \code{\link{succotash_given_alpha}}, \code{\link{factor_mle}},
