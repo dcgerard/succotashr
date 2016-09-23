@@ -4,6 +4,11 @@ SUCCOTASH: Surrogate and Confounder Correction Occuring Together with Adaptive S
 
 [![Build Status](https://travis-ci.org/dcgerard/succotashr.svg?branch=master)](https://travis-ci.org/dcgerard/succotashr)
 
+This package is no longer maintained.
+=====================================
+
+Please see the `mouthwash` function in the R package [vicar](https://github.com/dcgerard/vicar).
+
 Description
 -----------
 
